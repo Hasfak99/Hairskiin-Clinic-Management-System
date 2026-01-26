@@ -1,0 +1,182 @@
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
+from sqlalchemy import or_
+from typing import List, Optional
+from database import get_db
+import models
+import schemas
+from auth import require_any_role, require_admin_or_manager, get_branch_id_dependency
+
+router = APIRouter(prefix="/products", tags=["Products"])
+
+
+@router.get("/", response_model=List[schemas.ProductResponse])
+async def get_products(
+    skip: int = 0,
+    limit: int = 100,
+    search: Optional[str] = Query(None, description="Search by name"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    low_stock_only: bool = Query(False, description="Show only low stock items"),
+    active_only: bool = Query(True, description="Show only active products"),
+    branch_id: Optional[int] = Query(None, description="Filter by branch"),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_any_role),
+    current_branch_id: Optional[int] = Depends(get_branch_id_dependency)
+):
+    """Get all products with optional filters"""
+    query = db.query(models.Product)
+    
+    # Filter by branch_id - only if provided or user has a branch
+    # If user has no branch_id, show all products
+    filter_branch_id = branch_id if branch_id else current_branch_id
+    if filter_branch_id is not None:
+        # Show products for this branch OR products with no branch (global)
+        query = query.filter(
+            (models.Product.branch_id == filter_branch_id) | 
+            (models.Product.branch_id.is_(None))
+        )
+    
+    if active_only:
+        query = query.filter(models.Product.is_active == True)
+    
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                models.Product.product_name.ilike(search_term),
+                models.Product.description.ilike(search_term)
+            )
+        )
+    
+    if category:
+        query = query.filter(models.Product.category == category)
+    
+    if low_stock_only:
+        query = query.filter(models.Product.stock_qty <= models.Product.min_stock)
+    
+    products = query.order_by(models.Product.product_name).offset(skip).limit(limit).all()
+    return products
+
+
+@router.get("/categories")
+async def get_product_categories(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_any_role)
+):
+    """Get list of product categories"""
+    categories = db.query(models.Product.category)\
+        .filter(models.Product.category.isnot(None))\
+        .distinct().all()
+    return [c[0] for c in categories if c[0]]
+
+
+@router.get("/low-stock", response_model=List[schemas.ProductResponse])
+async def get_low_stock_products(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_any_role)
+):
+    """Get products with stock below minimum threshold"""
+    products = db.query(models.Product)\
+        .filter(models.Product.is_active == True)\
+        .filter(models.Product.stock_qty <= models.Product.min_stock)\
+        .order_by(models.Product.stock_qty)\
+        .all()
+    return products
+
+
+@router.get("/{product_id}", response_model=schemas.ProductResponse)
+async def get_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_any_role)
+):
+    """Get product by ID"""
+    product = db.query(models.Product).filter(models.Product.product_id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+
+@router.post("/", response_model=schemas.ProductResponse, status_code=status.HTTP_201_CREATED)
+async def create_product(
+    product: schemas.ProductCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin_or_manager),
+    current_branch_id: Optional[int] = Depends(get_branch_id_dependency)
+):
+    """Create new product (Admin/Manager only)"""
+    # Use branch_id from request or user's branch
+    branch_id = product.branch_id if product.branch_id else current_branch_id
+    if not branch_id:
+        raise HTTPException(status_code=400, detail="Branch ID is required")
+    
+    product_data = product.model_dump()
+    product_data['branch_id'] = branch_id
+    db_product = models.Product(**product_data)
+    db.add(db_product)
+    db.commit()
+    db.refresh(db_product)
+    return db_product
+
+
+@router.put("/{product_id}", response_model=schemas.ProductResponse)
+async def update_product(
+    product_id: int,
+    product_update: schemas.ProductUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin_or_manager)
+):
+    """Update product (Admin/Manager only)"""
+    db_product = db.query(models.Product).filter(models.Product.product_id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    update_data = product_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_product, key, value)
+    
+    db.commit()
+    db.refresh(db_product)
+    return db_product
+
+
+@router.patch("/{product_id}/stock")
+async def update_stock(
+    product_id: int,
+    quantity: int = Query(..., description="Quantity to add (positive) or remove (negative)"),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_any_role)
+):
+    """Update product stock quantity"""
+    db_product = db.query(models.Product).filter(models.Product.product_id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    new_qty = db_product.stock_qty + quantity
+    if new_qty < 0:
+        raise HTTPException(status_code=400, detail="Insufficient stock")
+    
+    db_product.stock_qty = new_qty
+    db.commit()
+    
+    return {
+        "product_id": product_id,
+        "previous_stock": db_product.stock_qty - quantity,
+        "new_stock": new_qty
+    }
+
+
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin_or_manager)
+):
+    """Deactivate product (Admin/Manager only) - soft delete"""
+    db_product = db.query(models.Product).filter(models.Product.product_id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    db_product.is_active = False
+    db.commit()
+    return None
