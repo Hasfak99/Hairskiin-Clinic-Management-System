@@ -79,6 +79,9 @@ class Client(Base):
     address = Column(Text, nullable=True)
     dob = Column(Date, nullable=True)
     notes = Column(Text, nullable=True)
+    client_type = Column(String(20), default="registered")  # "guest" or "registered"
+    qr_code = Column(String(100), unique=True, nullable=True, index=True)  # Unique QR identifier
+    registered_from_appointment = Column(Integer, nullable=True)  # Just stores ID, no FK to avoid circular ref
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=False, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -100,6 +103,7 @@ class Treatment(Base):
     duration = Column(Integer, nullable=False)  # in minutes
     category = Column(String(50), nullable=True)
     is_active = Column(Boolean, default=True)
+    is_global = Column(Boolean, default=False)  # True = shared across all branches
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=False, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -121,6 +125,7 @@ class Product(Base):
     min_stock = Column(Integer, default=5)  # Low stock alert threshold
     category = Column(String(50), nullable=True)
     is_active = Column(Boolean, default=True)
+    is_global = Column(Boolean, default=False)  # True = shared across all branches
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=False, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -134,12 +139,18 @@ class Appointment(Base):
     __tablename__ = "appointments"
 
     appointment_id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(Integer, ForeignKey("clients.client_id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("clients.client_id"), nullable=True)  # Nullable for walk-ins
     treatment_id = Column(Integer, ForeignKey("treatments.treatment_id"), nullable=False)
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=False, index=True)
     appointment_date = Column(Date, nullable=False, index=True)
     appointment_time = Column(Time, nullable=False)
     status = Column(String(20), default=AppointmentStatus.booked.value)
+    # Walk-in guest details
+    guest_name = Column(String(100), nullable=True)  # For walk-in appointments
+    guest_phone = Column(String(20), nullable=True)
+    # Payment tracking
+    payment_status = Column(String(20), default="pending")  # "pending", "paid"
+    converted_to_client = Column(Boolean, default=False)  # Guest converted to registered client
     notes = Column(Text, nullable=True)
     notification_sent = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.now())

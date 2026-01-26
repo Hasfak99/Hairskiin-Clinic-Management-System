@@ -6,7 +6,7 @@ from datetime import datetime
 from database import get_db
 import models
 import schemas
-from auth import require_any_role, get_branch_id_dependency
+from auth import require_any_role
 
 router = APIRouter(prefix="/bills", tags=["Bills"])
 
@@ -17,23 +17,11 @@ async def get_bills(
     limit: int = 100,
     client_id: Optional[int] = Query(None, description="Filter by client"),
     payment_status: Optional[str] = Query(None, description="Filter by payment status"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch"),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_any_role),
-    current_branch_id: Optional[int] = Depends(get_branch_id_dependency)
+    current_user: models.User = Depends(require_any_role)
 ):
     """Get all bills with optional filters"""
     query = db.query(models.Bill)
-    
-    # Filter by branch_id - only if provided or user has a branch
-    # If user has no branch_id, show all bills
-    filter_branch_id = branch_id if branch_id else current_branch_id
-    if filter_branch_id is not None:
-        # Show bills for this branch OR bills with no branch (global)
-        query = query.filter(
-            (models.Bill.branch_id == filter_branch_id) | 
-            (models.Bill.branch_id.is_(None))
-        )
     
     if client_id:
         query = query.filter(models.Bill.client_id == client_id)
@@ -100,22 +88,13 @@ async def get_bill(
 async def create_bill(
     bill: schemas.BillCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_any_role),
-    current_branch_id: Optional[int] = Depends(get_branch_id_dependency)
+    current_user: models.User = Depends(require_any_role)
 ):
     """Create new bill with items"""
-    # Use branch_id from request or user's branch
-    branch_id = bill.branch_id if bill.branch_id else current_branch_id
-    if not branch_id:
-        raise HTTPException(status_code=400, detail="Branch ID is required")
-    
-    # Validate client exists and belongs to branch
-    client = db.query(models.Client).filter(
-        models.Client.client_id == bill.client_id,
-        models.Client.branch_id == branch_id
-    ).first()
+    # Validate client
+    client = db.query(models.Client).filter(models.Client.client_id == bill.client_id).first()
     if not client:
-        raise HTTPException(status_code=404, detail="Client not found in this branch")
+        raise HTTPException(status_code=404, detail="Client not found")
     
     # Calculate totals
     total_amount = 0.0
@@ -152,7 +131,6 @@ async def create_bill(
     db_bill = models.Bill(
         client_id=bill.client_id,
         appointment_id=bill.appointment_id,
-        branch_id=branch_id,
         total_amount=total_amount,
         discount=bill.discount,
         tax=bill.tax,

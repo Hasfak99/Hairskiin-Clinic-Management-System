@@ -66,11 +66,16 @@ class TokenData(BaseModel):
     username: Optional[str] = None
     role: Optional[str] = None
     branch_id: Optional[int] = None
+    selected_branch_id: Optional[int] = None  # NEW: selected branch at login
 
 
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class BranchSelectionRequest(BaseModel):
+    branch_id: int
 
 
 # ==================== USER SCHEMAS ====================
@@ -109,6 +114,9 @@ class ClientBase(BaseModel):
     address: Optional[str] = None
     dob: Optional[date] = None
     notes: Optional[str] = None
+    client_type: Optional[str] = "registered"  # NEW: "guest" or "registered"
+    qr_code: Optional[str] = None  # NEW: QR code identifier
+    registered_from_appointment: Optional[int] = None  # NEW: conversion tracking
     branch_id: int
 
 
@@ -134,10 +142,22 @@ class ClientResponse(ClientBase):
         from_attributes = True
 
 
+class TreatmentHistoryItem(BaseModel):
+    """Individual treatment history record"""
+    appointment_id: int
+    treatment_name: str
+    appointment_date: date
+    appointment_time: time
+    status: str
+    payment_status: Optional[str] = None
+    amount: Optional[float] = None
+
+
 class ClientWithHistory(ClientResponse):
     total_appointments: int = 0
     total_spent: float = 0.0
     last_visit: Optional[datetime] = None
+    treatments_done: List[TreatmentHistoryItem] = []  # NEW: List of all treatments
 
 
 # ==================== TREATMENT SCHEMAS ====================
@@ -147,7 +167,8 @@ class TreatmentBase(BaseModel):
     price: float = Field(..., gt=0)
     duration: int = Field(..., gt=0)  # in minutes
     category: Optional[str] = None
-    branch_id: int
+    is_global: Optional[bool] = False  # NEW: shared across branches
+    branch_id: Optional[int] = None
 
 
 class TreatmentCreate(TreatmentBase):
@@ -161,6 +182,7 @@ class TreatmentUpdate(BaseModel):
     duration: Optional[int] = None
     category: Optional[str] = None
     is_active: Optional[bool] = None
+    is_global: Optional[bool] = None  # NEW
 
 
 class TreatmentResponse(TreatmentBase):
@@ -180,7 +202,8 @@ class ProductBase(BaseModel):
     stock_qty: int = Field(default=0, ge=0)
     min_stock: int = Field(default=5, ge=0)
     category: Optional[str] = None
-    branch_id: int
+    is_global: Optional[bool] = False  # NEW: shared across branches
+    branch_id: Optional[int] = None
 
 
 class ProductCreate(ProductBase):
@@ -195,6 +218,7 @@ class ProductUpdate(BaseModel):
     min_stock: Optional[int] = None
     category: Optional[str] = None
     is_active: Optional[bool] = None
+    is_global: Optional[bool] = None  # NEW
 
 
 class ProductResponse(ProductBase):
@@ -208,11 +232,14 @@ class ProductResponse(ProductBase):
 
 # ==================== APPOINTMENT SCHEMAS ====================
 class AppointmentBase(BaseModel):
-    client_id: int
+    client_id: Optional[int] = None  # MODIFIED: Now optional for walk-ins
     treatment_id: int
     appointment_date: date
     appointment_time: time
     notes: Optional[str] = None
+    guest_name: Optional[str] = None  # NEW: for walk-in appointments
+    guest_phone: Optional[str] = None  # NEW
+    payment_status: Optional[str] = "pending"  # NEW
     branch_id: int
 
 
@@ -220,11 +247,23 @@ class AppointmentCreate(AppointmentBase):
     pass
 
 
+class WalkInAppointmentCreate(BaseModel):
+    """Schema for walk-in appointments (no client_id required)"""
+    guest_name: str
+    guest_phone: str
+    treatment_id: int
+    appointment_date: date
+    appointment_time: time
+    notes: Optional[str] = None
+    branch_id: int
+
+
 class AppointmentUpdate(BaseModel):
     treatment_id: Optional[int] = None
     appointment_date: Optional[date] = None
     appointment_time: Optional[time] = None
     status: Optional[AppointmentStatus] = None
+    payment_status: Optional[str] = None  # NEW
     notes: Optional[str] = None
 
 
@@ -232,6 +271,7 @@ class AppointmentResponse(AppointmentBase):
     appointment_id: int
     status: AppointmentStatus
     notification_sent: bool
+    converted_to_client: bool  # NEW
     created_at: datetime
     client_name: Optional[str] = None
     treatment_name: Optional[str] = None
@@ -352,3 +392,10 @@ class SearchResult(BaseModel):
     title: str
     subtitle: Optional[str] = None
     url: str
+
+
+# ==================== QR CODE SCHEMAS ====================
+class QRCodeResponse(BaseModel):
+    qr_code: str
+    qr_url: str
+    client_id: int

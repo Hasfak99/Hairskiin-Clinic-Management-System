@@ -34,10 +34,23 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Log detailed error for debugging
+        console.error('API Error:', {
+            message: error.message,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            url: error.config?.url,
+            method: error.config?.method
+        });
+        
         if (error.response?.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/login';
+        } else if (!error.response) {
+            // Network error - server not reachable
+            console.error('Network Error: Server may not be running. Check http://localhost:8000/api/health');
         }
         return Promise.reject(error);
     }

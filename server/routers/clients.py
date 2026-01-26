@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from typing import List, Optional
+import uuid
 from database import get_db
 import models
 import schemas
-from auth import require_any_role, get_branch_id_dependency
+from auth import require_any_role
 
 router = APIRouter(prefix="/clients", tags=["Clients"])
 
@@ -15,23 +16,11 @@ async def get_clients(
     skip: int = 0,
     limit: int = 100,
     search: Optional[str] = Query(None, description="Search by name or phone"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch"),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_any_role),
-    current_branch_id: Optional[int] = Depends(get_branch_id_dependency)
+    current_user: models.User = Depends(require_any_role)
 ):
     """Get all clients with optional search"""
     query = db.query(models.Client)
-    
-    # Filter by branch_id - only if provided or user has a branch
-    # If user has no branch_id, show all clients
-    filter_branch_id = branch_id if branch_id else current_branch_id
-    if filter_branch_id is not None:
-        # Show clients for this branch OR clients with no branch (global)
-        query = query.filter(
-            (models.Client.branch_id == filter_branch_id) | 
-            (models.Client.branch_id.is_(None))
-        )
     
     if search:
         search_term = f"%{search}%"
@@ -44,28 +33,7 @@ async def get_clients(
         )
     
     clients = query.order_by(models.Client.name).offset(skip).limit(limit).all()
-    result = []
-    for client in clients:
-        # Build response safely, handling None branch relationships
-        branch_name = None
-        if client.branch_id and client.branch:
-            branch_name = client.branch.branch_name
-        
-        client_data = {
-            'client_id': client.client_id,
-            'name': client.name,
-            'phone': client.phone,
-            'email': client.email,
-            'address': client.address,
-            'dob': client.dob,
-            'notes': client.notes,
-            'branch_id': client.branch_id,
-            'created_at': client.created_at,
-            'updated_at': client.updated_at,
-            'branch_name': branch_name
-        }
-        result.append(schemas.ClientResponse(**client_data))
-    return result
+    return clients
 
 
 @router.get("/lookup/{phone}", response_model=schemas.ClientWithHistory)
@@ -74,7 +42,7 @@ async def lookup_client_by_phone(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
 ):
-    """Quick lookup client by phone number with history"""
+    """Quick lookup client by phone number with complete history - FOR RECEPTIONISTS"""
     client = db.query(models.Client).filter(models.Client.phone.ilike(f"%{phone}%")).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
@@ -94,11 +62,33 @@ async def lookup_client_by_phone(
         .order_by(models.Appointment.appointment_date.desc())\
         .first()
     
+    # Get all treatments done (complete history)
+    appointments = db.query(models.Appointment)\
+        .filter(models.Appointment.client_id == client.client_id)\
+        .order_by(models.Appointment.appointment_date.desc())\
+        .all()
+    
+    treatments_done = []
+    for apt in appointments:
+        treatment_name = apt.treatment.treatment_name if apt.treatment else "Unknown"
+        amount = apt.treatment.price if apt.treatment else 0.0
+        
+        treatments_done.append(schemas.TreatmentHistoryItem(
+            appointment_id=apt.appointment_id,
+            treatment_name=treatment_name,
+            appointment_date=apt.appointment_date,
+            appointment_time=apt.appointment_time,
+            status=apt.status,
+            payment_status=apt.payment_status if hasattr(apt, 'payment_status') else None,
+            amount=amount
+        ))
+    
     return schemas.ClientWithHistory(
         **client.__dict__,
         total_appointments=total_appointments,
         total_spent=total_spent,
-        last_visit=last_appointment.created_at if last_appointment else None
+        last_visit=last_appointment.created_at if last_appointment else None,
+        treatments_done=treatments_done
     )
 
 
@@ -137,33 +127,19 @@ async def get_client(
 async def create_client(
     client: schemas.ClientCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_any_role),
-    current_branch_id: Optional[int] = Depends(get_branch_id_dependency)
+    current_user: models.User = Depends(require_any_role)
 ):
     """Create new client"""
-    # Use branch_id from request or user's branch
-    # If user has no branch_id, allow None (global client)
-    branch_id = client.branch_id if client.branch_id is not None else current_branch_id
-    # Allow None branch_id for global clients (admins can create global clients)
-    
-    # Check if phone exists in same branch
-    existing = db.query(models.Client).filter(
-        models.Client.phone == client.phone,
-        models.Client.branch_id == branch_id
-    ).first()
+    # Check if phone exists
+    existing = db.query(models.Client).filter(models.Client.phone == client.phone).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Phone number already registered in this branch")
+        raise HTTPException(status_code=400, detail="Phone number already registered")
     
-    client_data = client.model_dump()
-    client_data['branch_id'] = branch_id
-    db_client = models.Client(**client_data)
+    db_client = models.Client(**client.model_dump())
     db.add(db_client)
     db.commit()
     db.refresh(db_client)
-    
-    client_dict = db_client.__dict__.copy()
-    client_dict['branch_name'] = db_client.branch.branch_name if db_client.branch else None
-    return schemas.ClientResponse(**client_dict)
+    return db_client
 
 
 @router.put("/{client_id}", response_model=schemas.ClientResponse)
@@ -261,3 +237,77 @@ async def get_client_bills(
         result.append(schemas.BillResponse(**bill_dict))
     
     return result
+
+
+# ==================== QR CODE ENDPOINTS ====================
+@router.post("/{client_id}/generate-qr", response_model=schemas.QRCodeResponse)
+async def generate_client_qr(
+    client_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_any_role)
+):
+    """Generate or regenerate QR code for client"""
+    client = db.query(models.Client).filter(models.Client.client_id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Generate unique QR code
+    qr_id = str(uuid.uuid4())[:8].upper()
+    
+    # Ensure uniqueness
+    while db.query(models.Client).filter(models.Client.qr_code == qr_id).first():
+        qr_id = str(uuid.uuid4())[:8].upper()
+    
+    client.qr_code = qr_id
+    db.commit()
+    
+    return schemas.QRCodeResponse(
+        qr_code=qr_id,
+        qr_url=f"/clients/scan/{qr_id}",
+        client_id=client_id
+    )
+
+
+@router.get("/scan/{qr_code}", response_model=schemas.ClientWithHistory)
+async def scan_client_qr(
+    qr_code: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_any_role)
+):
+    """Scan QR code and retrieve client details with complete treatment history - FOR RECEPTIONISTS"""
+    client = db.query(models.Client).filter(models.Client.qr_code == qr_code).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found for this QR code")
+    
+    # Get client history
+    total_appointments = db.query(func.count(models.Appointment.appointment_id)).filter(models.Appointment.client_id == client.client_id).scalar()
+    
+    total_spent = db.query(func.sum(models.Bill.final_amount)).filter(models.Bill.client_id == client.client_id).scalar() or 0.0
+    
+    last_appointment = db.query(models.Appointment).filter(models.Appointment.client_id == client.client_id).filter(models.Appointment.status == "completed").order_by(models.Appointment.appointment_date.desc()).first()
+    
+    # Get all treatments done (complete history)
+    appointments = db.query(models.Appointment).filter(models.Appointment.client_id == client.client_id).order_by(models.Appointment.appointment_date.desc()).all()
+    
+    treatments_done = []
+    for apt in appointments:
+        treatment_name = apt.treatment.treatment_name if apt.treatment else "Unknown"
+        amount = apt.treatment.price if apt.treatment else 0.0
+        
+        treatments_done.append(schemas.TreatmentHistoryItem(
+            appointment_id=apt.appointment_id,
+            treatment_name=treatment_name,
+            appointment_date=apt.appointment_date,
+            appointment_time=apt.appointment_time,
+            status=apt.status,
+            payment_status=apt.payment_status if hasattr(apt, 'payment_status') else None,
+            amount=amount
+        ))
+    
+    return schemas.ClientWithHistory(
+        **client.__dict__,
+        total_appointments=total_appointments,
+        total_spent=total_spent,
+        last_visit=last_appointment.created_at if last_appointment else None,
+        treatments_done=treatments_done
+    )
