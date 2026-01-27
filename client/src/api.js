@@ -3,8 +3,16 @@ import axios from 'axios';
 // API base URL - use proxy in development
 const API_URL = '/api';
 
-// Create axios instance
+// Create axios instance for authenticated requests
 const api = axios.create({
+    baseURL: API_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+// Create axios instance for public (unauthenticated) requests
+const publicApi = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
@@ -43,7 +51,7 @@ api.interceptors.response.use(
             url: error.config?.url,
             method: error.config?.method
         });
-        
+
         if (error.response?.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
@@ -99,6 +107,9 @@ export const clientsAPI = {
     delete: (id) => api.delete(`/clients/${id}`),
     getAppointments: (id) => api.get(`/clients/${id}/appointments`),
     getBills: (id) => api.get(`/clients/${id}/bills`),
+    generateQR: (id) => api.post(`/clients/${id}/generate-qr`),
+    // Use publicApi for public endpoint - no auth required
+    scanQRPublic: (qrCode) => publicApi.get(`/clients/public/scan/${qrCode}`),
 };
 
 // ==================== TREATMENTS ====================

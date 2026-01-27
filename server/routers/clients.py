@@ -311,3 +311,50 @@ async def scan_client_qr(
         last_visit=last_appointment.created_at if last_appointment else None,
         treatments_done=treatments_done
     )
+
+
+# ==================== PUBLIC QR SCAN (No Auth Required) ====================
+@router.get("/public/scan/{qr_code}", response_model=schemas.ClientWithHistory)
+async def public_scan_client_qr(
+    qr_code: str,
+    db: Session = Depends(get_db)
+):
+    """Public endpoint to scan QR code and retrieve client details - NO AUTHENTICATION REQUIRED
+    The QR code itself serves as a secure token for accessing client data.
+    """
+    client = db.query(models.Client).filter(models.Client.qr_code == qr_code).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found for this QR code")
+    
+    # Get client history
+    total_appointments = db.query(func.count(models.Appointment.appointment_id)).filter(models.Appointment.client_id == client.client_id).scalar()
+    
+    total_spent = db.query(func.sum(models.Bill.final_amount)).filter(models.Bill.client_id == client.client_id).scalar() or 0.0
+    
+    last_appointment = db.query(models.Appointment).filter(models.Appointment.client_id == client.client_id).filter(models.Appointment.status == "completed").order_by(models.Appointment.appointment_date.desc()).first()
+    
+    # Get all treatments done (complete history)
+    appointments = db.query(models.Appointment).filter(models.Appointment.client_id == client.client_id).order_by(models.Appointment.appointment_date.desc()).all()
+    
+    treatments_done = []
+    for apt in appointments:
+        treatment_name = apt.treatment.treatment_name if apt.treatment else "Unknown"
+        amount = apt.treatment.price if apt.treatment else 0.0
+        
+        treatments_done.append(schemas.TreatmentHistoryItem(
+            appointment_id=apt.appointment_id,
+            treatment_name=treatment_name,
+            appointment_date=apt.appointment_date,
+            appointment_time=apt.appointment_time,
+            status=apt.status,
+            payment_status=apt.payment_status if hasattr(apt, 'payment_status') else None,
+            amount=amount
+        ))
+    
+    return schemas.ClientWithHistory(
+        **client.__dict__,
+        total_appointments=total_appointments,
+        total_spent=total_spent,
+        last_visit=last_appointment.created_at if last_appointment else None,
+        treatments_done=treatments_done
+    )

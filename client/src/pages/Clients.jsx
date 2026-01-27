@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Phone, Mail, User, History } from 'lucide-react';
+import { Plus, Edit2, Trash2, Phone, Mail, User, History, QrCode, Printer } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { clientsAPI } from '../api';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
@@ -11,6 +12,8 @@ export default function Clients() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
+    const [showQRModal, setShowQRModal] = useState(false);
+    const [qrCodeData, setQRCodeData] = useState(null);
     const [selectedClient, setSelectedClient] = useState(null);
     const [clientHistory, setClientHistory] = useState({ appointments: [], bills: [] });
     const [formData, setFormData] = useState({
@@ -127,6 +130,54 @@ export default function Clients() {
         setFormData({ name: '', phone: '', email: '', address: '', dob: '', notes: '' });
     };
 
+    const handleGenerateQR = async (client) => {
+        try {
+            const response = await clientsAPI.generateQR(client.client_id);
+            const qrCode = response.data.qr_code;
+            const qrUrl = `${window.location.origin}/client/${qrCode}`;
+            setQRCodeData({
+                client: client,
+                qrCode: qrCode,
+                qrUrl: qrUrl
+            });
+            setShowQRModal(true);
+            toast.success('QR Code generated!');
+        } catch (error) {
+            toast.error(error.response?.data?.detail || 'Failed to generate QR code');
+        }
+    };
+
+    const handlePrintQR = () => {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Client QR Code - ${qrCodeData?.client?.name}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; padding: 40px; }
+                    .card { border: 2px solid #333; padding: 30px; max-width: 300px; margin: 0 auto; border-radius: 12px; }
+                    .name { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
+                    .phone { color: #666; margin-bottom: 20px; }
+                    .qr-container { margin: 20px 0; }
+                    .footer { font-size: 12px; color: #999; margin-top: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <div class="name">${qrCodeData?.client?.name}</div>
+                    <div class="phone">${qrCodeData?.client?.phone}</div>
+                    <div class="qr-container">
+                        ${document.getElementById('qr-code-svg').innerHTML}
+                    </div>
+                    <div class="footer">Scan to view profile</div>
+                </div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    };
+
     const columns = [
         {
             key: 'name',
@@ -188,6 +239,14 @@ export default function Clients() {
                 emptyMessage="No clients found. Add your first client!"
                 actions={(row) => (
                     <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
+                        <button
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => handleGenerateQR(row)}
+                            title="Generate QR Code"
+                            style={{ color: 'var(--primary-400)' }}
+                        >
+                            <QrCode size={16} />
+                        </button>
                         <button
                             className="btn btn-ghost btn-sm"
                             onClick={() => openHistoryModal(row)}
@@ -364,6 +423,61 @@ export default function Clients() {
                                 ))}
                             </div>
                         )}
+                    </div>
+                </div>
+            </Modal>
+
+            {/* QR Code Modal */}
+            <Modal
+                isOpen={showQRModal}
+                onClose={() => setShowQRModal(false)}
+                title={`QR Code - ${qrCodeData?.client?.name}`}
+                footer={
+                    <>
+                        <button className="btn btn-secondary" onClick={() => setShowQRModal(false)}>
+                            Close
+                        </button>
+                        <button className="btn btn-primary" onClick={handlePrintQR}>
+                            <Printer size={18} />
+                            Print Card
+                        </button>
+                    </>
+                }
+            >
+                <div style={{ textAlign: 'center', padding: 'var(--spacing-4)' }}>
+                    <div id="qr-code-svg" style={{
+                        display: 'inline-block',
+                        padding: 'var(--spacing-4)',
+                        background: 'white',
+                        borderRadius: 'var(--radius-lg)',
+                        marginBottom: 'var(--spacing-4)'
+                    }}>
+                        {qrCodeData && (
+                            <QRCodeSVG
+                                value={qrCodeData.qrUrl}
+                                size={200}
+                                level="H"
+                            />
+                        )}
+                    </div>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-2)' }}>
+                        Scan this QR code to view client profile
+                    </p>
+                    <div style={{
+                        background: 'var(--surface-elevated)',
+                        padding: 'var(--spacing-3)',
+                        borderRadius: 'var(--radius-md)',
+                        wordBreak: 'break-all',
+                        fontSize: 'var(--font-size-sm)'
+                    }}>
+                        <a
+                            href={qrCodeData?.qrUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: 'var(--primary-400)' }}
+                        >
+                            {qrCodeData?.qrUrl}
+                        </a>
                     </div>
                 </div>
             </Modal>

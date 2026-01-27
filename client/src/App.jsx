@@ -9,6 +9,7 @@ import Header from './components/Header';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
+import ClientProfile from './pages/ClientProfile';
 import Appointments from './pages/Appointments';
 import Treatments from './pages/Treatments';
 import Products from './pages/Products';
@@ -63,6 +64,9 @@ function App() {
                 path="/login"
                 element={isAuthenticated() ? <Navigate to="/" replace /> : <Login />}
             />
+
+            {/* Public Client Profile (QR Code Scan) */}
+            <Route path="/client/:qrCode" element={<ClientProfile />} />
 
             {/* Protected Routes */}
             <Route path="/" element={

@@ -46,11 +46,16 @@ export default function Appointments() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const payload = {
+                ...formData,
+                branch_id: parseInt(localStorage.getItem('selectedBranchId') || '1'),
+            };
+
             if (selectedAppointment) {
-                await appointmentsAPI.update(selectedAppointment.appointment_id, formData);
+                await appointmentsAPI.update(selectedAppointment.appointment_id, payload);
                 toast.success('Appointment updated');
             } else {
-                await appointmentsAPI.create(formData);
+                await appointmentsAPI.create(payload);
                 toast.success('Appointment booked');
             }
             setShowModal(false);
