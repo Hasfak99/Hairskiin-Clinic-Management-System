@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Scissors, Clock, Banknote } from 'lucide-react';
-import { treatmentsAPI } from '../api';
+import { treatmentsAPI, branchesAPI } from '../api';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 export default function Treatments() {
     const [treatments, setTreatments] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [branches, setBranches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedTreatment, setSelectedTreatment] = useState(null);
@@ -17,11 +18,13 @@ export default function Treatments() {
         price: '',
         duration: '',
         category: '',
+        branch_id: '',
     });
 
     useEffect(() => {
         fetchTreatments();
         fetchCategories();
+        fetchBranches();
     }, []);
 
     const fetchTreatments = async () => {
@@ -44,6 +47,15 @@ export default function Treatments() {
         }
     };
 
+    const fetchBranches = async () => {
+        try {
+            const response = await branchesAPI.getAll();
+            setBranches(response.data);
+        } catch (error) {
+            console.error('Error fetching branches:', error);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -56,6 +68,7 @@ export default function Treatments() {
                 price: parseFloat(formData.price),
                 duration: parseInt(formData.duration),
                 category: sanitize(formData.category),
+                branch_id: formData.branch_id ? parseInt(formData.branch_id) : parseInt(localStorage.getItem('selectedBranchId') || '1'),
             };
 
             if (isNaN(data.price) || data.price <= 0) {
@@ -97,13 +110,14 @@ export default function Treatments() {
             price: treatment.price.toString(),
             duration: treatment.duration.toString(),
             category: treatment.category || '',
+            branch_id: treatment.branch_id?.toString() || '',
         });
         setShowModal(true);
     };
 
     const resetForm = () => {
         setSelectedTreatment(null);
-        setFormData({ treatment_name: '', description: '', price: '', duration: '', category: '' });
+        setFormData({ treatment_name: '', description: '', price: '', duration: '', category: '', branch_id: '' });
     };
 
     const columns = [
@@ -267,6 +281,21 @@ export default function Treatments() {
                                 <option key={c} value={c} />
                             ))}
                         </datalist>
+                    </div>
+
+                    <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
+                        <label className="input-label">Branch *</label>
+                        <select
+                            className="input"
+                            value={formData.branch_id}
+                            onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                            required
+                        >
+                            <option value="">Select Branch</option>
+                            {branches.map(b => (
+                                <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="input-group">

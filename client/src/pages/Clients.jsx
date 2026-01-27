@@ -66,6 +66,7 @@ export default function Clients() {
             address: sanitize(formData.address),
             dob: sanitize(formData.dob),
             notes: sanitize(formData.notes),
+            branch_id: parseInt(localStorage.getItem('selectedBranchId') || '1'),
         };
 
         console.log('CLIENT CREATE/UPDATE PAYLOAD:', payload);

@@ -6,11 +6,21 @@ import sys
 sys.path.insert(0, '.')
 
 from database import SessionLocal, engine, Base
-from models import User
+from models import User, Branch
 from auth import get_password_hash
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+# Default branch to create
+DEFAULT_BRANCH = {
+    "branch_name": "Main Branch",
+    "address": "123 Clinic Street",
+    "phone": "0771234567",
+    "email": "main@hairskiin.com",
+    "is_active": True
+}
+
 
 # Default users to create
 DEFAULT_USERS = [
@@ -40,6 +50,19 @@ DEFAULT_USERS = [
 def seed_users():
     db = SessionLocal()
     try:
+        # Create default branch first
+        existing_branch = db.query(Branch).filter(Branch.branch_name == DEFAULT_BRANCH["branch_name"]).first()
+        if existing_branch:
+            print(f"Branch '{DEFAULT_BRANCH['branch_name']}' already exists, skipping...")
+            branch = existing_branch
+        else:
+            branch = Branch(**DEFAULT_BRANCH)
+            db.add(branch)
+            db.commit()
+            db.refresh(branch)
+            print(f"Created branch: {branch.branch_name} (ID: {branch.branch_id})")
+        
+        # Create users
         for user_data in DEFAULT_USERS:
             # Check if user exists
             existing = db.query(User).filter(User.username == user_data["username"]).first()
@@ -47,19 +70,21 @@ def seed_users():
                 print(f"User '{user_data['username']}' already exists, skipping...")
                 continue
             
-            # Create user
+            # Create user with branch_id
             user = User(
                 username=user_data["username"],
                 password_hash=get_password_hash(user_data["password"]),
                 full_name=user_data["full_name"],
                 role=user_data["role"],
-                status=user_data["status"]
+                status=user_data["status"],
+                branch_id=branch.branch_id
             )
             db.add(user)
             print(f"Created user: {user_data['username']} ({user_data['role']})")
         
         db.commit()
         print("\n✅ Seed completed successfully!")
+        print(f"\n🏢 Default Branch: {branch.branch_name} (ID: {branch.branch_id})")
         print("\n📋 Login Credentials:")
         print("-" * 40)
         for user in DEFAULT_USERS:

@@ -7,7 +7,7 @@ echo.
 cd /d "%~dp0"
 
 echo [1/4] Creating virtual environment...
-python -m venv venv
+"C:\Users\hmhas\AppData\Local\Programs\Python\Python312\python.exe" -m venv venv
 if errorlevel 1 (
     echo ERROR: Failed to create virtual environment
     pause
@@ -26,7 +26,7 @@ if errorlevel 1 (
 )
 
 echo [4/4] Creating default users...
-python seed.py
+venv\Scripts\python seed.py
 
 echo.
 echo ========================================
