@@ -8,7 +8,9 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
 import ThermalReceipt from '../components/ThermalReceipt';
+
 import ProfessionalBill from '../components/ProfessionalBill';
+import SearchableSelect from '../components/SearchableSelect';
 
 export default function Billing() {
     const [bills, setBills] = useState([]);
@@ -301,19 +303,17 @@ export default function Billing() {
                         </div>
 
                         {!createClientMode ? (
-                            <select
-                                className="input"
+                            <SearchableSelect
+                                label=""
+                                placeholder="Select Client"
+                                options={clients.map(c => ({
+                                    value: c.client_id,
+                                    label: `${c.name} (${c.phone})`
+                                }))}
                                 value={formData.client_id}
-                                onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
+                                onChange={(val) => setFormData({ ...formData, client_id: val })}
                                 required={!createClientMode}
-                            >
-                                <option value="">Select Client</option>
-                                {clients.map(c => (
-                                    <option key={c.client_id} value={c.client_id}>
-                                        {c.name} ({c.phone})
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         ) : (
                             <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
                                 <input
@@ -356,26 +356,25 @@ export default function Billing() {
                                 <option value="treatment">Treatment</option>
                                 <option value="product">Product</option>
                             </select>
-                            <select
-                                className="input"
-                                value={newItem.item_id}
-                                onChange={(e) => setNewItem({ ...newItem, item_id: e.target.value })}
-                                style={{ flex: 1, minWidth: 200 }}
-                            >
-                                <option value="">Select {newItem.type}</option>
-                                {newItem.type === 'treatment'
-                                    ? treatments.map(t => (
-                                        <option key={t.treatment_id} value={t.treatment_id}>
-                                            {t.treatment_name} - LKR {t.price}
-                                        </option>
-                                    ))
-                                    : products.map(p => (
-                                        <option key={p.product_id} value={p.product_id}>
-                                            {p.product_name} - LKR {p.price} (Stock: {p.stock_qty})
-                                        </option>
-                                    ))
-                                }
-                            </select>
+
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                                <SearchableSelect
+                                    placeholder={`Select ${newItem.type === 'treatment' ? 'Treatment' : 'Product'}`}
+                                    options={newItem.type === 'treatment'
+                                        ? treatments.map(t => ({
+                                            value: t.treatment_id,
+                                            label: `${t.treatment_name} - LKR ${t.price}`
+                                        }))
+                                        : products.map(p => ({
+                                            value: p.product_id,
+                                            label: `${p.product_name} - LKR ${p.price} (Stock: ${p.stock_qty})`
+                                        }))
+                                    }
+                                    value={newItem.item_id ? parseInt(newItem.item_id) : ''}
+                                    onChange={(val) => setNewItem({ ...newItem, item_id: val })}
+                                />
+                            </div>
+
                             {newItem.type === 'product' && (
                                 <input
                                     type="number"
@@ -576,9 +575,6 @@ export default function Billing() {
                         <button className="btn btn-secondary" onClick={() => handlePrint('thermal')}>
                             <Receipt size={16} /> Thermal Receipt
                         </button>
-                        <button className="btn btn-primary" onClick={() => handlePrint('professional')}>
-                            <Printer size={16} /> Professional A4
-                        </button>
                     </div>
                 }
             >
@@ -658,47 +654,23 @@ export default function Billing() {
                                 </div>
                             </div>
                         )}
-
-                        {/* QR Code for Payment */}
-                        <div style={{
-                            marginTop: 'var(--spacing-6)',
-                            padding: 'var(--spacing-4)',
-                            background: '#ffffff',
-                            border: '2px solid #000000',
-                            borderRadius: 'var(--radius-lg)',
-                            textAlign: 'center',
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--spacing-2)', marginBottom: 'var(--spacing-3)' }}>
-                                <QrCode size={20} />
-                                <span style={{ fontWeight: 600 }}>Scan to Pay</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--spacing-3)', background: '#ffffff', borderRadius: 'var(--radius-md)' }}>
-                                <QRCodeSVG
-                                    value={`hairskiin://pay?bill=${selectedBill.bill_id}&amount=${selectedBill.final_amount}&client=${encodeURIComponent(selectedBill.client_name || '')}`}
-                                    size={150}
-                                    level="H"
-                                    includeMargin={true}
-                                />
-                            </div>
-                            <p style={{ fontSize: 'var(--font-size-sm)', color: '#666666', marginTop: 'var(--spacing-2)' }}>
-                                Bill #{selectedBill.bill_id?.toString().padStart(4, '0')} • LKR {selectedBill.final_amount}
-                            </p>
-                        </div>
                     </div>
                 )}
             </Modal>
 
             {/* Hidden components for printing */}
-            {selectedBill && (
-                <>
-                    <div className={`print-preview-hidden ${printType === 'thermal' ? 'print-active' : ''}`}>
-                        <ThermalReceipt bill={{ ...selectedBill, cashReceived }} />
-                    </div>
-                    <div className={`print-preview-hidden ${printType === 'professional' ? 'print-active' : ''}`}>
-                        <ProfessionalBill bill={{ ...selectedBill, cashReceived }} />
-                    </div>
-                </>
-            )}
-        </div>
+            {
+                selectedBill && (
+                    <>
+                        <div className={`print-preview-hidden ${printType === 'thermal' ? 'print-active' : ''}`}>
+                            <ThermalReceipt bill={{ ...selectedBill, cashReceived }} />
+                        </div>
+                        <div className={`print-preview-hidden ${printType === 'professional' ? 'print-active' : ''}`}>
+                            <ProfessionalBill bill={{ ...selectedBill, cashReceived }} />
+                        </div>
+                    </>
+                )
+            }
+        </div >
     );
 }
