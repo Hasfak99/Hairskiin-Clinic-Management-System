@@ -17,6 +17,7 @@ import Billing from './pages/Billing';
 import Analytics from './pages/Analytics';
 import Users from './pages/Users';
 import Branches from './pages/Branches';
+import Departments from './pages/Departments';
 
 // Protected Route wrapper
 function ProtectedRoute({ children }) {
@@ -137,6 +138,14 @@ function App() {
                 <ProtectedRoute>
                     <MainLayout>
                         <Branches />
+                    </MainLayout>
+                </ProtectedRoute>
+            } />
+
+            <Route path="/departments" element={
+                <ProtectedRoute>
+                    <MainLayout>
+                        <Departments />
                     </MainLayout>
                 </ProtectedRoute>
             } />

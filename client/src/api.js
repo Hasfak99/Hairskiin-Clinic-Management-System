@@ -73,6 +73,15 @@ export const branchesAPI = {
     delete: (id) => api.delete(`/branches/${id}`),
 };
 
+// ==================== DEPARTMENTS ====================
+export const departmentsAPI = {
+    getAll: (params) => api.get('/departments/', { params }),
+    getById: (id) => api.get(`/departments/${id}`),
+    create: (data) => api.post('/departments/', data),
+    update: (id, data) => api.put(`/departments/${id}`, data),
+    delete: (id) => api.delete(`/departments/${id}`),
+};
+
 // ==================== AUTH ====================
 export const authAPI = {
     login: (username, password) => {

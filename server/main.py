@@ -15,7 +15,7 @@ from auth import (
 )
 
 # Import routers
-from routers import users, clients, treatments, products, appointments, bills, analytics, search, branches
+from routers import users, clients, treatments, products, appointments, bills, analytics, search, branches, departments
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -101,6 +101,7 @@ async def register_first_admin(
 
 # ==================== INCLUDE ROUTERS ====================
 app.include_router(branches.router, prefix="/api")
+app.include_router(departments.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(clients.router, prefix="/api")
 app.include_router(treatments.router, prefix="/api")

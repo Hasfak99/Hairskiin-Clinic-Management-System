@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, '.')
 
 from database import SessionLocal, engine, Base
-from models import User, Branch
+from models import User, Branch, Department
 from auth import get_password_hash
 
 # Create tables
@@ -20,6 +20,20 @@ DEFAULT_BRANCH = {
     "email": "main@hairskiin.com",
     "is_active": True
 }
+
+# Default departments to create
+DEFAULT_DEPARTMENTS = [
+    {
+        "department_name": "Hair Skin Clinic",
+        "description": "Hair and Skin treatment department",
+        "is_active": True
+    },
+    {
+        "department_name": "Harskin SriLanka",
+        "description": "Harskin SriLanka operations",
+        "is_active": True
+    }
+]
 
 
 # Default users to create
@@ -62,6 +76,23 @@ def seed_users():
             db.refresh(branch)
             print(f"Created branch: {branch.branch_name} (ID: {branch.branch_id})")
         
+        # Create default departments
+        print("\n🏬 Creating departments...")
+        for dept_data in DEFAULT_DEPARTMENTS:
+            existing_dept = db.query(Department).filter(Department.department_name == dept_data["department_name"]).first()
+            if existing_dept:
+                print(f"  Department '{dept_data['department_name']}' already exists, skipping...")
+                continue
+            dept = Department(
+                department_name=dept_data["department_name"],
+                description=dept_data["description"],
+                branch_id=branch.branch_id,
+                is_active=dept_data["is_active"]
+            )
+            db.add(dept)
+            print(f"  Created department: {dept_data['department_name']}")
+        db.commit()
+        
         # Create users
         for user_data in DEFAULT_USERS:
             # Check if user exists
@@ -85,6 +116,9 @@ def seed_users():
         db.commit()
         print("\n✅ Seed completed successfully!")
         print(f"\n🏢 Default Branch: {branch.branch_name} (ID: {branch.branch_id})")
+        print("\n🏬 Departments:")
+        for dept in db.query(Department).all():
+            print(f"  - {dept.department_name} (ID: {dept.department_id})")
         print("\n📋 Login Credentials:")
         print("-" * 40)
         for user in DEFAULT_USERS:

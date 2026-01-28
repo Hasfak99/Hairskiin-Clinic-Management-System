@@ -48,6 +48,24 @@ class Branch(Base):
     products = relationship("Product", back_populates="branch")
     treatments = relationship("Treatment", back_populates="branch")
     expenses = relationship("Expense", back_populates="branch")
+    departments = relationship("Department", back_populates="branch")
+
+
+# ==================== DEPARTMENTS ====================
+class Department(Base):
+    __tablename__ = "departments"
+
+    department_id = Column(Integer, primary_key=True, index=True)
+    department_name = Column(String(100), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=True, index=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    branch = relationship("Branch", back_populates="departments")
+    users = relationship("User", back_populates="department")
 
 
 # ==================== USERS ====================
@@ -61,11 +79,13 @@ class User(Base):
     role = Column(String(20), default=UserRole.receptionist.value)
     status = Column(String(20), default=UserStatus.active.value)
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=True, index=True)
+    department_id = Column(Integer, ForeignKey("departments.department_id"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
     branch = relationship("Branch", back_populates="users")
+    department = relationship("Department", back_populates="users")
 
 
 # ==================== CLIENTS ====================

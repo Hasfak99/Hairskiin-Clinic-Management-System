@@ -56,6 +56,34 @@ class BranchResponse(BranchBase):
         from_attributes = True
 
 
+# ==================== DEPARTMENT SCHEMAS ====================
+class DepartmentBase(BaseModel):
+    department_name: str = Field(..., min_length=2, max_length=100)
+    description: Optional[str] = None
+    branch_id: Optional[int] = None
+
+
+class DepartmentCreate(DepartmentBase):
+    pass
+
+
+class DepartmentUpdate(BaseModel):
+    department_name: Optional[str] = None
+    description: Optional[str] = None
+    branch_id: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
+class DepartmentResponse(DepartmentBase):
+    department_id: int
+    is_active: bool
+    created_at: datetime
+    branch_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 # ==================== AUTH ====================
 class Token(BaseModel):
     access_token: str
@@ -84,6 +112,7 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     role: UserRole = UserRole.receptionist
     branch_id: Optional[int] = None
+    department_id: Optional[int] = None
 
 
 class UserCreate(UserBase):
@@ -94,6 +123,8 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     role: Optional[UserRole] = None
     status: Optional[UserStatus] = None
+    branch_id: Optional[int] = None
+    department_id: Optional[int] = None
 
 
 class UserResponse(UserBase):
@@ -101,6 +132,7 @@ class UserResponse(UserBase):
     status: UserStatus
     created_at: datetime
     branch_name: Optional[str] = None
+    department_name: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -1,56 +1,73 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Building2 } from 'lucide-react';
-import { branchesAPI } from '../api';
+import { Plus, Edit2, Trash2, Building } from 'lucide-react';
+import { departmentsAPI, branchesAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
-export default function Branches() {
+export default function Departments() {
+    const [departments, setDepartments] = useState([]);
     const [branches, setBranches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [selectedBranch, setSelectedBranch] = useState(null);
-    const { isAdmin, isManager } = useAuth();
+    const [selectedDepartment, setSelectedDepartment] = useState(null);
+    const { isAdmin } = useAuth();
     const [formData, setFormData] = useState({
-        branch_name: '',
-        address: '',
-        phone: '',
-        email: '',
+        department_name: '',
+        description: '',
+        branch_id: '',
     });
 
     useEffect(() => {
-        if (isAdmin() || isManager()) {
-            fetchBranches();
+        if (isAdmin()) {
+            fetchData();
         }
     }, []);
 
-    const fetchBranches = async () => {
+    const fetchData = async () => {
         try {
-            const response = await branchesAPI.getAll();
-            setBranches(response.data);
+            const [deptRes, branchRes] = await Promise.all([
+                departmentsAPI.getAll(),
+                branchesAPI.getAll()
+            ]);
+            setDepartments(deptRes.data);
+            setBranches(branchRes.data);
         } catch (error) {
-            toast.error('Failed to fetch branches');
+            toast.error('Failed to fetch data');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchDepartments = async () => {
+        try {
+            const response = await departmentsAPI.getAll();
+            setDepartments(response.data);
+        } catch (error) {
+            console.error(error);
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            if (selectedBranch) {
-                await branchesAPI.update(selectedBranch.branch_id, formData);
-                toast.success('Branch updated');
+            const payload = {
+                ...formData,
+                branch_id: formData.branch_id ? parseInt(formData.branch_id) : null
+            };
+
+            if (selectedDepartment) {
+                await departmentsAPI.update(selectedDepartment.department_id, payload);
+                toast.success('Department updated');
             } else {
-                await branchesAPI.create(formData);
-                toast.success('Branch created');
+                await departmentsAPI.create(payload);
+                toast.success('Department created');
             }
             setShowModal(false);
-            setSelectedBranch(null);
-            setFormData({ branch_name: '', address: '', phone: '', email: '' });
-            fetchBranches();
+            resetForm();
+            fetchDepartments();
         } catch (error) {
             console.error('Submission error:', error);
             const detail = error.response?.data?.detail;
@@ -59,42 +76,46 @@ export default function Branches() {
                 const messages = detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join('\n');
                 toast.error(messages);
             } else {
-                toast.error(typeof detail === 'string' ? detail : 'Failed to save branch');
+                toast.error(typeof detail === 'string' ? detail : 'Failed to save department');
             }
         }
     };
 
-    const handleEdit = (branch) => {
-        setSelectedBranch(branch);
+    const handleEdit = (dept) => {
+        setSelectedDepartment(dept);
         setFormData({
-            branch_name: branch.branch_name || '',
-            address: branch.address || '',
-            phone: branch.phone || '',
-            email: branch.email || '',
+            department_name: dept.department_name || '',
+            description: dept.description || '',
+            branch_id: dept.branch_id || '',
         });
         setShowModal(true);
     };
 
-    const handleDelete = async (branch) => {
-        if (!window.confirm(`Are you sure you want to delete ${branch.branch_name}?`)) {
+    const handleDelete = async (dept) => {
+        if (!window.confirm(`Are you sure you want to delete ${dept.department_name}?`)) {
             return;
         }
         try {
-            await branchesAPI.delete(branch.branch_id);
-            toast.success('Branch deleted');
-            fetchBranches();
+            await departmentsAPI.delete(dept.department_id);
+            toast.success('Department deleted');
+            fetchDepartments();
         } catch (error) {
-            toast.error(error.response?.data?.detail || 'Failed to delete branch');
+            toast.error(error.response?.data?.detail || 'Failed to delete department');
         }
+    };
+
+    const resetForm = () => {
+        setSelectedDepartment(null);
+        setFormData({ department_name: '', description: '', branch_id: '' });
     };
 
     const columns = [
         {
-            key: 'branch_name',
-            label: 'Branch Name',
+            key: 'department_name',
+            label: 'Department Name',
             render: (value, row) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
-                    <Building2 size={18} color="var(--primary)" />
+                    <Building size={18} color="var(--primary)" />
                     <span style={{ fontWeight: 500 }}>{value}</span>
                     {!row.is_active && (
                         <span style={{
@@ -110,9 +131,8 @@ export default function Branches() {
                 </div>
             ),
         },
-        { key: 'address', label: 'Address' },
-        { key: 'phone', label: 'Phone' },
-        { key: 'email', label: 'Email' },
+        { key: 'description', label: 'Description' },
+        { key: 'branch_name', label: 'Branch' },
         {
             key: 'created_at',
             label: 'Created',
@@ -120,10 +140,10 @@ export default function Branches() {
         },
     ];
 
-    if (!isAdmin() && !isManager()) {
+    if (!isAdmin()) {
         return (
             <div style={{ padding: 'var(--spacing-6)', textAlign: 'center' }}>
-                <p>Access denied. Admin or Manager role required.</p>
+                <p>Access denied. Admin role required.</p>
             </div>
         );
     }
@@ -138,29 +158,26 @@ export default function Branches() {
             }}>
                 <div>
                     <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: 'var(--spacing-2)' }}>
-                        Branch Management
+                        Departments
                     </h1>
                     <p style={{ color: 'var(--text-muted)' }}>
-                        Manage branches and locations
+                        Manage clinic departments and units
                     </p>
                 </div>
-                {isAdmin() && (
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => {
-                            setSelectedBranch(null);
-                            setFormData({ branch_name: '', address: '', phone: '', email: '' });
-                            setShowModal(true);
-                        }}
-                    >
-                        <Plus size={20} />
-                        Add Branch
-                    </button>
-                )}
+                <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                        resetForm();
+                        setShowModal(true);
+                    }}
+                >
+                    <Plus size={20} />
+                    Add Department
+                </button>
             </div>
 
             <DataTable
-                data={branches}
+                data={departments}
                 columns={columns}
                 loading={loading}
                 actions={(row) => (
@@ -172,15 +189,13 @@ export default function Branches() {
                         >
                             <Edit2 size={18} />
                         </button>
-                        {isAdmin() && (
-                            <button
-                                className="btn btn-ghost btn-icon"
-                                onClick={() => handleDelete(row)}
-                                title="Delete"
-                            >
-                                <Trash2 size={18} />
-                            </button>
-                        )}
+                        <button
+                            className="btn btn-ghost btn-icon"
+                            onClick={() => handleDelete(row)}
+                            title="Delete"
+                        >
+                            <Trash2 size={18} />
+                        </button>
                     </>
                 )}
             />
@@ -189,48 +204,44 @@ export default function Branches() {
                 isOpen={showModal}
                 onClose={() => {
                     setShowModal(false);
-                    setSelectedBranch(null);
-                    setFormData({ branch_name: '', address: '', phone: '', email: '' });
+                    resetForm();
                 }}
-                title={selectedBranch ? 'Edit Branch' : 'Add Branch'}
+                title={selectedDepartment ? 'Edit Department' : 'Add Department'}
             >
                 <form onSubmit={handleSubmit}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
                         <div>
-                            <label className="label">Branch Name *</label>
+                            <label className="label">Department Name *</label>
                             <input
                                 type="text"
                                 className="input"
-                                value={formData.branch_name}
-                                onChange={(e) => setFormData({ ...formData, branch_name: e.target.value })}
+                                value={formData.department_name}
+                                onChange={(e) => setFormData({ ...formData, department_name: e.target.value })}
                                 required
                             />
                         </div>
                         <div>
-                            <label className="label">Address</label>
+                            <label className="label">Branch</label>
+                            <select
+                                className="input"
+                                value={formData.branch_id}
+                                onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                            >
+                                <option value="">Select Branch</option>
+                                {branches.map(branch => (
+                                    <option key={branch.branch_id} value={branch.branch_id}>
+                                        {branch.branch_name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="label">Description</label>
                             <textarea
                                 className="input"
-                                value={formData.address}
-                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 rows={3}
-                            />
-                        </div>
-                        <div>
-                            <label className="label">Phone</label>
-                            <input
-                                type="tel"
-                                className="input"
-                                value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <label className="label">Email</label>
-                            <input
-                                type="email"
-                                className="input"
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             />
                         </div>
                         <div style={{ display: 'flex', gap: 'var(--spacing-3)', justifyContent: 'flex-end' }}>
@@ -239,14 +250,13 @@ export default function Branches() {
                                 className="btn btn-ghost"
                                 onClick={() => {
                                     setShowModal(false);
-                                    setSelectedBranch(null);
-                                    setFormData({ branch_name: '', address: '', phone: '', email: '' });
+                                    resetForm();
                                 }}
                             >
                                 Cancel
                             </button>
                             <button type="submit" className="btn btn-primary">
-                                {selectedBranch ? 'Update' : 'Create'}
+                                {selectedDepartment ? 'Update' : 'Create'}
                             </button>
                         </div>
                     </div>

@@ -28,6 +28,7 @@ async def get_users(
     for user in users:
         user_dict = user.__dict__.copy()
         user_dict['branch_name'] = user.branch.branch_name if user.branch else None
+        user_dict['department_name'] = user.department.department_name if user.department else None
         result.append(schemas.UserResponse(**user_dict))
     return result
 
@@ -40,6 +41,7 @@ async def get_current_user_info(
     """Get current logged-in user details"""
     user_dict = current_user.__dict__.copy()
     user_dict['branch_name'] = current_user.branch.branch_name if current_user.branch else None
+    user_dict['department_name'] = current_user.department.department_name if current_user.department else None
     return schemas.UserResponse(**user_dict)
 
 
@@ -72,7 +74,9 @@ async def create_user(
         username=user.username,
         password_hash=get_password_hash(user.password),
         full_name=user.full_name,
-        role=user.role.value
+        role=user.role.value,
+        branch_id=user.branch_id,
+        department_id=user.department_id
     )
     db.add(db_user)
     db.commit()

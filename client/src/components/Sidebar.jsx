@@ -25,6 +25,7 @@ const navItems = [
     { path: '/billing', icon: Receipt, label: 'Billing', roles: ['admin', 'manager', 'receptionist'] },
     { path: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'manager'] },
     { path: '/branches', icon: Building2, label: 'Branches', roles: ['admin', 'manager'] },
+    { path: '/departments', icon: Building2, label: 'Departments', roles: ['admin'] },
     { path: '/users', icon: Settings, label: 'Users', roles: ['admin'] },
 ];
 

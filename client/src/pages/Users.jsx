@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Shield, User, Key } from 'lucide-react';
-import { usersAPI } from '../api';
+import { usersAPI, departmentsAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
@@ -9,24 +9,31 @@ import { format } from 'date-fns';
 
 export default function Users() {
     const [users, setUsers] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [newPassword, setNewPassword] = useState('');
-    const { user: currentUser, isAdmin } = useAuth();
+    const { user: currentUser, isAdmin, branches } = useAuth();
     const [formData, setFormData] = useState({
         username: '',
         password: '',
         full_name: '',
         role: 'receptionist',
+        branch_id: null,
+        department_id: null,
     });
 
     useEffect(() => {
-        if (isAdmin()) {
+        // Only fetch if user is admin
+        if (currentUser && currentUser.role === 'admin') {
             fetchUsers();
+            fetchDepartments();
+        } else {
+            setLoading(false);
         }
-    }, []);
+    }, [currentUser]);
 
     const fetchUsers = async () => {
         try {
@@ -39,6 +46,15 @@ export default function Users() {
         }
     };
 
+    const fetchDepartments = async () => {
+        try {
+            const response = await departmentsAPI.getAll();
+            setDepartments(response.data);
+        } catch (error) {
+            console.error('Failed to fetch departments:', error);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -46,6 +62,7 @@ export default function Users() {
                 await usersAPI.update(selectedUser.user_id, {
                     full_name: formData.full_name,
                     role: formData.role,
+                    branch_id: formData.branch_id,
                 });
                 toast.success('User updated');
             } else {
@@ -56,7 +73,15 @@ export default function Users() {
             resetForm();
             fetchUsers();
         } catch (error) {
-            toast.error(error.response?.data?.detail || 'Operation failed');
+            console.error('Submission error:', error);
+            const detail = error.response?.data?.detail;
+            if (Array.isArray(detail)) {
+                // Handle Pydantic validation errors
+                const messages = detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join('\n');
+                toast.error(messages);
+            } else {
+                toast.error(typeof detail === 'string' ? detail : 'Operation failed');
+            }
         }
     };
 
@@ -93,13 +118,15 @@ export default function Users() {
             password: '',
             full_name: user.full_name || '',
             role: user.role,
+            branch_id: user.branch_id || null,
+            department_id: user.department_id || null,
         });
         setShowModal(true);
     };
 
     const resetForm = () => {
         setSelectedUser(null);
-        setFormData({ username: '', password: '', full_name: '', role: 'receptionist' });
+        setFormData({ username: '', password: '', full_name: '', role: 'receptionist', branch_id: null, department_id: null });
     };
 
     const roleColors = {
@@ -149,7 +176,10 @@ export default function Users() {
         },
     ];
 
-    if (!isAdmin()) {
+    // Check if user is admin using direct role check
+    const userIsAdmin = currentUser?.role === 'admin';
+
+    if (!userIsAdmin) {
         return (
             <div className="empty-state" style={{ minHeight: '60vh' }}>
                 <Shield size={64} style={{ color: 'var(--text-muted)', marginBottom: 'var(--spacing-4)' }} />
@@ -261,7 +291,7 @@ export default function Users() {
                         />
                     </div>
 
-                    <div className="input-group">
+                    <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
                         <label className="input-label">Role *</label>
                         <select
                             className="input"
@@ -272,6 +302,38 @@ export default function Users() {
                             <option value="receptionist">Receptionist</option>
                             <option value="manager">Manager</option>
                             <option value="admin">Admin</option>
+                        </select>
+                    </div>
+
+                    <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
+                        <label className="input-label">Branch</label>
+                        <select
+                            className="input"
+                            value={formData.branch_id || ''}
+                            onChange={(e) => setFormData({ ...formData, branch_id: e.target.value ? parseInt(e.target.value) : null })}
+                        >
+                            <option value="">No Branch (Admin)</option>
+                            {(branches || []).map(branch => (
+                                <option key={branch.branch_id} value={branch.branch_id}>
+                                    {branch.branch_name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="input-group">
+                        <label className="input-label">Sub Department</label>
+                        <select
+                            className="input"
+                            value={formData.department_id || ''}
+                            onChange={(e) => setFormData({ ...formData, department_id: e.target.value ? parseInt(e.target.value) : null })}
+                        >
+                            <option value="">No Department</option>
+                            {(departments || []).map(dept => (
+                                <option key={dept.department_id} value={dept.department_id}>
+                                    {dept.department_name}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 </form>
