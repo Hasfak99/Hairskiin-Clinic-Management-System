@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { Plus, Printer, Receipt, Search, Trash2, QrCode } from 'lucide-react';
 import { billsAPI, clientsAPI, treatmentsAPI, productsAPI } from '../api';
 import DataTable from '../components/DataTable';
@@ -20,6 +21,7 @@ export default function Billing() {
     const [selectedBill, setSelectedBill] = useState(null);
     const [cashReceived, setCashReceived] = useState(0);
     const [printType, setPrintType] = useState('thermal'); // 'thermal' or 'professional'
+    const { selectedBranch } = useAuth();
 
     const [formData, setFormData] = useState({
         client_id: '',
@@ -30,10 +32,16 @@ export default function Billing() {
         notes: '',
     });
 
+    const [createClientMode, setCreateClientMode] = useState(false);
     const [newItem, setNewItem] = useState({
         type: 'treatment',
         item_id: '',
         quantity: 1,
+    });
+    // For quick client creation
+    const [newClientData, setNewClientData] = useState({
+        name: '',
+        phone: '',
     });
 
     useEffect(() => {
@@ -111,7 +119,34 @@ export default function Billing() {
             return;
         }
         try {
-            const response = await billsAPI.create(formData);
+            let finalClientId = formData.client_id;
+
+            // Handle New Client creation
+            if (createClientMode) {
+                if (!newClientData.name || !newClientData.phone) {
+                    toast.error('Please enter Name and Phone for new client');
+                    return;
+                }
+                const clientRes = await clientsAPI.create({
+                    name: newClientData.name,
+                    phone: newClientData.phone,
+                    email: '', // Optional
+                    address: '', // Optional
+                    branch_id: selectedBranch?.branch_id || 1 // Default to 1 if not selected, or handle error
+                });
+                finalClientId = clientRes.data.client_id;
+            } else if (!finalClientId) {
+                toast.error('Please select a client');
+                return;
+            }
+
+            const payload = {
+                ...formData,
+                client_id: finalClientId,
+                branch_id: selectedBranch?.branch_id || 1 // Default to 1 if not selected
+            };
+
+            const response = await billsAPI.create(payload);
             toast.success('Bill created successfully');
             setShowModal(false);
             // Don't resetForm() here yet, so cashReceived stays in state for the view modal
@@ -120,7 +155,15 @@ export default function Billing() {
             setSelectedBill(response.data);
             setShowViewModal(true);
         } catch (error) {
-            toast.error(error.response?.data?.detail || 'Failed to create bill');
+            console.error('Submission error:', error);
+            const detail = error.response?.data?.detail;
+            if (Array.isArray(detail)) {
+                // Handle Pydantic validation errors
+                const messages = detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join('\n');
+                toast.error(messages);
+            } else {
+                toast.error(typeof detail === 'string' ? detail : 'Failed to create bill');
+            }
         }
     };
 
@@ -144,6 +187,8 @@ export default function Billing() {
             payment_method: 'cash',
             notes: '',
         });
+        setCreateClientMode(false);
+        setNewClientData({ name: '', phone: '' });
     };
 
     const handlePrint = (type) => {
@@ -243,20 +288,54 @@ export default function Billing() {
             >
                 <form onSubmit={handleSubmit}>
                     <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
-                        <label className="input-label">Client *</label>
-                        <select
-                            className="input"
-                            value={formData.client_id}
-                            onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-                            required
-                        >
-                            <option value="">Select Client</option>
-                            {clients.map(c => (
-                                <option key={c.client_id} value={c.client_id}>
-                                    {c.name} ({c.phone})
-                                </option>
-                            ))}
-                        </select>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-2)' }}>
+                            <label className="input-label" style={{ marginBottom: 0 }}>Client *</label>
+                            <button
+                                type="button"
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => setCreateClientMode(!createClientMode)}
+                                style={{ color: 'var(--primary-600)', fontWeight: 500 }}
+                            >
+                                {createClientMode ? 'Select Existing Client' : 'New Client ?'}
+                            </button>
+                        </div>
+
+                        {!createClientMode ? (
+                            <select
+                                className="input"
+                                value={formData.client_id}
+                                onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
+                                required={!createClientMode}
+                            >
+                                <option value="">Select Client</option>
+                                {clients.map(c => (
+                                    <option key={c.client_id} value={c.client_id}>
+                                        {c.name} ({c.phone})
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder="Client Name"
+                                    value={newClientData.name}
+                                    onChange={(e) => setNewClientData({ ...newClientData, name: e.target.value })}
+                                    style={{ flex: 1 }}
+                                    required={createClientMode}
+                                />
+                                <input
+                                    type="tel"
+                                    className="input"
+                                    placeholder="Phone Number"
+                                    value={newClientData.phone}
+                                    onChange={(e) => setNewClientData({ ...newClientData, phone: e.target.value })}
+                                    style={{ flex: 1 }}
+                                    required={createClientMode}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* Add Items */}

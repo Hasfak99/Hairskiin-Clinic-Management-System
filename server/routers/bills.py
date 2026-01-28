@@ -131,6 +131,7 @@ async def create_bill(
     db_bill = models.Bill(
         client_id=bill.client_id,
         appointment_id=bill.appointment_id,
+        branch_id=bill.branch_id,
         total_amount=total_amount,
         discount=bill.discount,
         tax=bill.tax,
