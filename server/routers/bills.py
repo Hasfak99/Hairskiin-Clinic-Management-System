@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -7,6 +7,7 @@ from database import get_db
 import models
 import schemas
 from auth import require_any_role
+from utils.email import send_low_stock_notification
 
 router = APIRouter(prefix="/bills", tags=["Bills"])
 
@@ -87,6 +88,7 @@ async def get_bill(
 @router.post("/", response_model=schemas.BillResponse, status_code=status.HTTP_201_CREATED)
 async def create_bill(
     bill: schemas.BillCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
 ):
@@ -113,6 +115,12 @@ async def create_bill(
                         status_code=400, 
                         detail=f"Insufficient stock for {product.product_name}"
                     )
+                
+                # Check for low stock alert (new_stock < 50)
+                new_stock = product.stock_qty - item.quantity
+                if product.stock_qty >= 50 and new_stock < 50:
+                    background_tasks.add_task(send_low_stock_notification, product.product_name, new_stock, 50)
+                
                 product.stock_qty -= item.quantity
         
         bill_details.append(models.BillDetail(
@@ -243,6 +251,7 @@ async def delete_bill(
 async def add_bill_item(
     bill_id: int,
     item: schemas.BillDetailCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
 ):
@@ -259,6 +268,12 @@ async def add_bill_item(
         if product:
             if product.stock_qty < item.quantity:
                 raise HTTPException(status_code=400, detail="Insufficient stock")
+            
+            # Check for low stock alert
+            new_stock = product.stock_qty - item.quantity
+            if product.stock_qty >= 50 and new_stock < 50:
+                background_tasks.add_task(send_low_stock_notification, product.product_name, new_stock, 50)
+                
             product.stock_qty -= item.quantity
     
     detail = models.BillDetail(

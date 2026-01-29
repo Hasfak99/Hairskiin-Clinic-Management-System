@@ -8,11 +8,13 @@ import {
     Banknote,
     Package,
     ArrowRight,
-    Clock
+    Clock,
+    Mail
 } from 'lucide-react';
-import { analyticsAPI, appointmentsAPI } from '../api';
+import { analyticsAPI, appointmentsAPI, productsAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
+import toast from 'react-hot-toast';
 
 export default function Dashboard() {
     const [stats, setStats] = useState(null);
@@ -36,6 +38,19 @@ export default function Dashboard() {
             console.error('Error fetching dashboard:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleLowStockNotify = async () => {
+        try {
+            const promise = productsAPI.sendLowStockReport();
+            toast.promise(promise, {
+                loading: 'Checking inventory...',
+                success: (data) => `Report sent! ${data.data.count} items found.`,
+                error: 'Failed to send report',
+            });
+        } catch (error) {
+            console.error(error);
         }
     };
 
@@ -233,6 +248,15 @@ export default function Dashboard() {
                             <Package size={24} />
                             <span>Manage Products</span>
                         </Link>
+
+                        <button
+                            className="btn btn-secondary btn-lg"
+                            style={{ flexDirection: 'column', height: 100, gap: 'var(--spacing-2)' }}
+                            onClick={handleLowStockNotify}
+                        >
+                            <Mail size={24} />
+                            <span>Email Stock Report</span>
+                        </button>
                     </div>
 
                     {/* Net Profit Summary */}
@@ -250,6 +274,6 @@ export default function Dashboard() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

@@ -141,6 +141,7 @@ export const productsAPI = {
     update: (id, data) => api.put(`/products/${id}`, data),
     updateStock: (id, quantity) => api.patch(`/products/${id}/stock`, null, { params: { quantity } }),
     delete: (id) => api.delete(`/products/${id}`),
+    sendLowStockReport: () => api.post('/products/low-stock/notify'),
 };
 
 // ==================== APPOINTMENTS ====================

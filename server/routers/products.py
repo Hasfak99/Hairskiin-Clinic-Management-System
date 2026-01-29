@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
@@ -7,6 +7,7 @@ from database import get_db
 import models
 import schemas
 from auth import require_any_role, require_admin_or_manager, get_branch_id_dependency
+from utils.email import send_low_stock_notification, send_low_stock_report
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -152,6 +153,7 @@ async def create_product(
 async def update_product(
     product_id: int,
     product_update: schemas.ProductUpdate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_admin_or_manager)
 ):
@@ -161,6 +163,14 @@ async def update_product(
         raise HTTPException(status_code=404, detail="Product not found")
     
     update_data = product_update.model_dump(exclude_unset=True)
+    
+    # Check for stock drop
+    if "stock_qty" in update_data:
+        old_qty = db_product.stock_qty
+        new_qty = update_data["stock_qty"]
+        if old_qty >= 50 and new_qty < 50:
+            background_tasks.add_task(send_low_stock_notification, db_product.product_name, new_qty, 50)
+
     for key, value in update_data.items():
         setattr(db_product, key, value)
     
@@ -172,6 +182,7 @@ async def update_product(
 @router.patch("/{product_id}/stock")
 async def update_stock(
     product_id: int,
+    background_tasks: BackgroundTasks,
     quantity: int = Query(..., description="Quantity to add (positive) or remove (negative)"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
@@ -182,6 +193,10 @@ async def update_stock(
         raise HTTPException(status_code=404, detail="Product not found")
     
     new_qty = db_product.stock_qty + quantity
+    
+    if db_product.stock_qty >= 50 and new_qty < 50:
+        background_tasks.add_task(send_low_stock_notification, db_product.product_name, new_qty, 50)
+
     if new_qty < 0:
         raise HTTPException(status_code=400, detail="Insufficient stock")
     
@@ -209,3 +224,26 @@ async def delete_product(
     db_product.is_active = False
     db.commit()
     return None
+
+
+@router.post("/low-stock/notify")
+async def notify_low_stock(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin_or_manager)
+):
+    """Trigger email report for all low stock products (< 50)"""
+    # Find all products with stock < 50
+    products = db.query(models.Product)\
+        .filter(models.Product.is_active == True)\
+        .filter(models.Product.stock_qty < 50)\
+        .all()
+    
+    if not products:
+        return {"message": "No low stock products found", "count": 0}
+    
+    product_list = [{"name": p.product_name, "stock": p.stock_qty} for p in products]
+    
+    background_tasks.add_task(send_low_stock_report, product_list)
+    
+    return {"message": "Low stock report queued for sending", "count": len(products)}
