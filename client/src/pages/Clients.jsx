@@ -24,15 +24,30 @@ export default function Clients() {
         dob: '',
         notes: '',
     });
+    const [pagination, setPagination] = useState({
+        page: 1,
+        size: 20,
+        total: 0,
+        pages: 1
+    });
 
     useEffect(() => {
         fetchClients();
-    }, []);
+    }, [pagination.page]);
 
     const fetchClients = async () => {
         try {
-            const response = await clientsAPI.getAll();
-            setClients(response.data);
+            setLoading(true);
+            const response = await clientsAPI.getAll({
+                page: pagination.page,
+                size: pagination.size
+            });
+            setClients(response.data.items);
+            setPagination(prev => ({
+                ...prev,
+                total: response.data.total,
+                pages: response.data.pages
+            }));
         } catch (error) {
             toast.error('Failed to fetch clients');
         } finally {
@@ -252,6 +267,12 @@ export default function Clients() {
                 data={clients}
                 loading={loading}
                 emptyMessage="No clients found. Add your first client!"
+                pagination={{
+                    currentPage: pagination.page,
+                    totalPages: pagination.pages,
+                    totalItems: pagination.total,
+                    onPageChange: (page) => setPagination(prev => ({ ...prev, page }))
+                }}
                 actions={(row) => (
                     <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
                         <button

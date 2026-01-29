@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
 from datetime import datetime
+import math
 from database import get_db
 import models
 import schemas
@@ -12,10 +13,10 @@ from utils.email import send_low_stock_notification, send_low_stock_report
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
-@router.get("/", response_model=List[schemas.ProductResponse])
+@router.get("/", response_model=schemas.PaginatedResponse[schemas.ProductResponse])
 async def get_products(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = 1,
+    size: int = 20,
     search: Optional[str] = Query(None, description="Search by name"),
     category: Optional[str] = Query(None, description="Filter by category"),
     low_stock_only: bool = Query(False, description="Show only low stock items"),
@@ -56,16 +57,29 @@ async def get_products(
     if low_stock_only:
         query = query.filter(models.Product.stock_qty <= models.Product.min_stock)
     
-    products = query.order_by(models.Product.product_name).offset(skip).limit(limit).all()
+    today = datetime.now().date()
     
-    result = []
+    # Get total count
+    total = query.count()
+    
+    # Pagination
+    skip = (page - 1) * size
+    products = query.order_by(models.Product.product_name).offset(skip).limit(size).all()
+    
+    items = []
     for p in products:
         p_dict = p.__dict__.copy()
         p_dict['branch_name'] = p.branch.branch_name if p.branch else None
         p_dict['department_name'] = p.department.department_name if p.department else None
-        result.append(schemas.ProductResponse(**p_dict))
+        items.append(schemas.ProductResponse(**p_dict))
     
-    return result
+    return schemas.PaginatedResponse(
+        items=items,
+        total=total,
+        page=page,
+        size=size,
+        pages=math.ceil(total / size)
+    )
 
 
 @router.get("/categories")

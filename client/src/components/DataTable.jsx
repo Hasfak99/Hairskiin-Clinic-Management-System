@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function DataTable({
     columns,
@@ -9,6 +9,7 @@ export default function DataTable({
     onRowClick,
     emptyMessage = 'No data found',
     actions,
+    pagination = null,
 }) {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [searchTerm, setSearchTerm] = useState('');
@@ -139,6 +140,44 @@ export default function DataTable({
                     </tbody>
                 </table>
             </div>
-        </div>
+
+            {/* Pagination */}
+            {
+                pagination && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginTop: 'var(--spacing-4)',
+                        padding: '0 var(--spacing-2)'
+                    }}>
+                        <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
+                            Total {pagination.totalItems} items
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
+                            <span style={{ fontSize: 'var(--font-size-sm)' }}>
+                                Page {pagination.currentPage} of {pagination.totalPages}
+                            </span>
+                            <div style={{ display: 'flex', gap: 'var(--spacing-1)' }}>
+                                <button
+                                    className="btn btn-ghost btn-sm"
+                                    onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
+                                    disabled={pagination.currentPage <= 1}
+                                >
+                                    <ChevronLeft size={16} />
+                                </button>
+                                <button
+                                    className="btn btn-ghost btn-sm"
+                                    onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
+                                    disabled={pagination.currentPage >= pagination.totalPages}
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 }

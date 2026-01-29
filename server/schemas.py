@@ -1,7 +1,18 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from typing import Optional, List, TypeVar, Generic
 from datetime import date, time, datetime
 from enum import Enum
+
+
+# ==================== GENERIC ====================
+T = TypeVar('T')
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: List[T]
+    total: int
+    page: int
+    size: int
+    pages: int
 
 
 # ==================== ENUMS ====================

@@ -4,6 +4,7 @@ from sqlalchemy import func, or_
 from typing import List, Optional
 import uuid
 from datetime import datetime
+import math
 from database import get_db
 import models
 import schemas
@@ -12,15 +13,16 @@ from auth import require_any_role
 router = APIRouter(prefix="/clients", tags=["Clients"])
 
 
-@router.get("/", response_model=List[schemas.ClientResponse])
+
+@router.get("/", response_model=schemas.PaginatedResponse[schemas.ClientResponse])
 async def get_clients(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = 1,
+    size: int = 20,
     search: Optional[str] = Query(None, description="Search by name or phone"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
 ):
-    """Get all clients with optional search"""
+    """Get all clients with optional search and pagination"""
     query = db.query(models.Client)
     
     if search:
@@ -33,8 +35,20 @@ async def get_clients(
             )
         )
     
-    clients = query.order_by(models.Client.name).offset(skip).limit(limit).all()
-    return clients
+    # Get total count
+    total = query.count()
+    
+    # Pagination
+    skip = (page - 1) * size
+    clients = query.order_by(models.Client.name).offset(skip).limit(size).all()
+    
+    return schemas.PaginatedResponse(
+        items=clients,
+        total=total,
+        page=page,
+        size=size,
+        pages=math.ceil(total / size)
+    )
 
 
 @router.get("/lookup/{phone}", response_model=schemas.ClientWithHistory)

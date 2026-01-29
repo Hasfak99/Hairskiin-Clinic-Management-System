@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+import math
 from database import get_db
 import models
 import schemas
@@ -10,28 +11,42 @@ from auth import get_password_hash, require_admin, get_current_user
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.get("/", response_model=List[schemas.UserResponse])
+
+@router.get("/", response_model=schemas.PaginatedResponse[schemas.UserResponse])
 async def get_users(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = 1,
+    size: int = 20,
     branch_id: Optional[int] = Query(None, description="Filter by branch"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_admin)
 ):
-    """Get all users (Admin only)"""
+    """Get all users (Admin only) with pagination"""
     query = db.query(models.User)
     
     if branch_id:
         query = query.filter(models.User.branch_id == branch_id)
     
-    users = query.offset(skip).limit(limit).all()
-    result = []
+    # Get total count
+    total = query.count()
+    
+    # Pagination
+    skip = (page - 1) * size
+    users = query.offset(skip).limit(size).all()
+    
+    items = []
     for user in users:
         user_dict = user.__dict__.copy()
         user_dict['branch_name'] = user.branch.branch_name if user.branch else None
         user_dict['department_name'] = user.department.department_name if user.department else None
-        result.append(schemas.UserResponse(**user_dict))
-    return result
+        items.append(schemas.UserResponse(**user_dict))
+    
+    return schemas.PaginatedResponse(
+        items=items,
+        total=total,
+        page=page,
+        size=size,
+        pages=math.ceil(total / size)
+    )
 
 
 @router.get("/me", response_model=schemas.UserResponse)

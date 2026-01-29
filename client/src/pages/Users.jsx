@@ -24,6 +24,12 @@ export default function Users() {
         branch_id: null,
         department_id: null,
     });
+    const [pagination, setPagination] = useState({
+        page: 1,
+        size: 20,
+        total: 0,
+        pages: 1
+    });
 
     useEffect(() => {
         // Only fetch if user is admin
@@ -33,12 +39,20 @@ export default function Users() {
         } else {
             setLoading(false);
         }
-    }, [currentUser]);
+    }, [currentUser, pagination.page]);
 
     const fetchUsers = async () => {
         try {
-            const response = await usersAPI.getAll();
-            setUsers(response.data);
+            const response = await usersAPI.getAll({
+                page: pagination.page,
+                size: pagination.size
+            });
+            setUsers(response.data.items);
+            setPagination(prev => ({
+                ...prev,
+                total: response.data.total,
+                pages: response.data.pages
+            }));
         } catch (error) {
             toast.error('Failed to fetch users');
         } finally {
@@ -225,6 +239,12 @@ export default function Users() {
                 data={users}
                 loading={loading}
                 emptyMessage="No users found"
+                pagination={{
+                    currentPage: pagination.page,
+                    totalPages: pagination.pages,
+                    totalItems: pagination.total,
+                    onPageChange: (page) => setPagination(prev => ({ ...prev, page }))
+                }}
                 actions={(row) => row.user_id !== currentUser?.user_id && (
                     <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
                         <button

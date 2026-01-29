@@ -24,6 +24,12 @@ export default function Billing() {
     const [cashReceived, setCashReceived] = useState(0);
     const [printType, setPrintType] = useState('thermal'); // 'thermal' or 'professional'
     const { selectedBranch } = useAuth();
+    const [pagination, setPagination] = useState({
+        page: 1,
+        size: 20,
+        total: 0,
+        pages: 1
+    });
 
     const [formData, setFormData] = useState({
         client_id: '',
@@ -48,20 +54,28 @@ export default function Billing() {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [pagination.page]);
 
     const fetchData = async () => {
         try {
             const [billRes, clientRes, treatRes, prodRes] = await Promise.all([
-                billsAPI.getAll(),
+                billsAPI.getAll({
+                    page: pagination.page,
+                    size: pagination.size
+                }),
                 clientsAPI.getAll(),
                 treatmentsAPI.getAll(),
                 productsAPI.getAll(),
             ]);
-            setBills(billRes.data);
-            setClients(clientRes.data);
-            setTreatments(treatRes.data);
-            setProducts(prodRes.data);
+            setBills(billRes.data.items);
+            setPagination(prev => ({
+                ...prev,
+                total: billRes.data.total,
+                pages: billRes.data.pages
+            }));
+            setClients(clientRes.data.items || clientRes.data);
+            setTreatments(treatRes.data.items || treatRes.data);
+            setProducts(prodRes.data.items || prodRes.data);
         } catch (error) {
             toast.error('Failed to fetch data');
         } finally {
@@ -255,6 +269,12 @@ export default function Billing() {
                 loading={loading}
                 emptyMessage="No bills found"
                 onRowClick={(row) => { setCashReceived(0); setSelectedBill(row); setShowViewModal(true); }}
+                pagination={{
+                    currentPage: pagination.page,
+                    totalPages: pagination.pages,
+                    totalItems: pagination.total,
+                    onPageChange: (page) => setPagination(prev => ({ ...prev, page }))
+                }}
                 actions={(row) => (
                     <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
                         {row.payment_status !== 'paid' && (

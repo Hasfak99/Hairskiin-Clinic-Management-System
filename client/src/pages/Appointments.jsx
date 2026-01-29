@@ -21,21 +21,35 @@ export default function Appointments() {
         notes: '',
     });
     const [selectedTreatment, setSelectedTreatment] = useState(null);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        size: 20,
+        total: 0,
+        pages: 1
+    });
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [pagination.page]);
 
     const fetchData = async () => {
         try {
             const [aptRes, clientRes, treatRes] = await Promise.all([
-                appointmentsAPI.getAll(),
+                appointmentsAPI.getAll({
+                    page: pagination.page,
+                    size: pagination.size
+                }),
                 clientsAPI.getAll(),
                 treatmentsAPI.getAll(),
             ]);
-            setAppointments(aptRes.data);
-            setClients(clientRes.data);
-            setTreatments(treatRes.data);
+            setAppointments(aptRes.data.items);
+            setPagination(prev => ({
+                ...prev,
+                total: aptRes.data.total,
+                pages: aptRes.data.pages
+            }));
+            setClients(clientRes.data.items || clientRes.data);
+            setTreatments(treatRes.data.items || treatRes.data);
         } catch (error) {
             toast.error('Failed to fetch data');
         } finally {
@@ -195,6 +209,12 @@ export default function Appointments() {
                 data={appointments}
                 loading={loading}
                 emptyMessage="No appointments found"
+                pagination={{
+                    currentPage: pagination.page,
+                    totalPages: pagination.pages,
+                    totalItems: pagination.total,
+                    onPageChange: (page) => setPagination(prev => ({ ...prev, page }))
+                }}
                 actions={(row) => (
                     <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
                         {row.status === 'booked' && (

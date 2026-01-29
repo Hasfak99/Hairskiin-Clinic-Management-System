@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
 from datetime import datetime
+import math
 from database import get_db
 import models
 import schemas
@@ -11,10 +12,11 @@ from auth import require_any_role, require_admin_or_manager, get_branch_id_depen
 router = APIRouter(prefix="/treatments", tags=["Treatments"])
 
 
-@router.get("/", response_model=List[schemas.TreatmentResponse])
+
+@router.get("/", response_model=schemas.PaginatedResponse[schemas.TreatmentResponse])
 async def get_treatments(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = 1,
+    size: int = 20,
     search: Optional[str] = Query(None, description="Search by name"),
     category: Optional[str] = Query(None, description="Filter by category"),
     active_only: bool = Query(True, description="Show only active treatments"),
@@ -23,7 +25,7 @@ async def get_treatments(
     current_user: models.User = Depends(require_any_role),
     current_branch_id: Optional[int] = Depends(get_branch_id_dependency)
 ):
-    """Get all treatments with optional filters"""
+    """Get all treatments with optional filters and pagination"""
     query = db.query(models.Treatment)
     
     # Filter by branch_id - only if provided or user has a branch
@@ -53,8 +55,20 @@ async def get_treatments(
     if category:
         query = query.filter(models.Treatment.category == category)
     
-    treatments = query.order_by(models.Treatment.treatment_name).offset(skip).limit(limit).all()
-    return treatments
+    # Get total count
+    total = query.count()
+    
+    # Pagination
+    skip = (page - 1) * size
+    treatments = query.order_by(models.Treatment.treatment_name).offset(skip).limit(size).all()
+    
+    return schemas.PaginatedResponse(
+        items=treatments,
+        total=total,
+        page=page,
+        size=size,
+        pages=math.ceil(total / size)
+    )
 
 
 @router.get("/categories")

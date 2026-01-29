@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from typing import List, Optional
 from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta
+import math
 import uuid
 from database import get_db
 import models
@@ -12,10 +14,11 @@ from auth import require_any_role
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
 
 
-@router.get("/", response_model=List[schemas.AppointmentResponse])
+
+@router.get("/", response_model=schemas.PaginatedResponse[schemas.AppointmentResponse])
 async def get_appointments(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = 1,
+    size: int = 20,
     date_from: Optional[date] = Query(None, description="Filter from date"),
     date_to: Optional[date] = Query(None, description="Filter to date"),
     status: Optional[str] = Query(None, description="Filter by status"),
@@ -23,7 +26,7 @@ async def get_appointments(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
 ):
-    """Get all appointments with optional filters"""
+    """Get all appointments with optional filters and pagination"""
     query = db.query(models.Appointment)
     
     if date_from:
@@ -38,20 +41,31 @@ async def get_appointments(
     if client_id:
         query = query.filter(models.Appointment.client_id == client_id)
     
+    # Get total count
+    total = query.count()
+    
+    # Pagination
+    skip = (page - 1) * size
     appointments = query.order_by(
         models.Appointment.appointment_date.desc(),
         models.Appointment.appointment_time.desc()
-    ).offset(skip).limit(limit).all()
+    ).offset(skip).limit(size).all()
     
-    result = []
+    items = []
     for apt in appointments:
         apt_dict = apt.__dict__.copy()
         apt_dict['client_name'] = apt.client.name if apt.client else None
         apt_dict['treatment_name'] = apt.treatment.treatment_name if apt.treatment else None
         apt_dict['treatment_price'] = apt.treatment.price if apt.treatment else None
-        result.append(schemas.AppointmentResponse(**apt_dict))
+        items.append(schemas.AppointmentResponse(**apt_dict))
     
-    return result
+    return schemas.PaginatedResponse(
+        items=items,
+        total=total,
+        page=page,
+        size=size,
+        pages=math.ceil(total / size)
+    )
 
 
 @router.get("/today", response_model=List[schemas.AppointmentResponse])

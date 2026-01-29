@@ -20,17 +20,33 @@ export default function Treatments() {
         category: '',
         branch_id: '',
     });
+    const [pagination, setPagination] = useState({
+        page: 1,
+        size: 20,
+        total: 0,
+        pages: 1
+    });
 
     useEffect(() => {
         fetchTreatments();
         fetchCategories();
         fetchBranches();
-    }, []);
+    }, [pagination.page]);
 
     const fetchTreatments = async () => {
         try {
-            const response = await treatmentsAPI.getAll({ active_only: false });
-            setTreatments(response.data);
+            setLoading(true);
+            const response = await treatmentsAPI.getAll({
+                active_only: false,
+                page: pagination.page,
+                size: pagination.size
+            });
+            setTreatments(response.data.items);
+            setPagination(prev => ({
+                ...prev,
+                total: response.data.total,
+                pages: response.data.pages
+            }));
         } catch (error) {
             toast.error('Failed to fetch treatments');
         } finally {
@@ -208,6 +224,12 @@ export default function Treatments() {
                 data={treatments}
                 loading={loading}
                 emptyMessage="No treatments found"
+                pagination={{
+                    currentPage: pagination.page,
+                    totalPages: pagination.pages,
+                    totalItems: pagination.total,
+                    onPageChange: (page) => setPagination(prev => ({ ...prev, page }))
+                }}
                 actions={(row) => (
                     <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
                         <button

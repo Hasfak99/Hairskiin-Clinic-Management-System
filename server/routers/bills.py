@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime
+import math
 from database import get_db
 import models
 import schemas
@@ -12,16 +13,17 @@ from utils.email import send_low_stock_notification
 router = APIRouter(prefix="/bills", tags=["Bills"])
 
 
-@router.get("/", response_model=List[schemas.BillResponse])
+
+@router.get("/", response_model=schemas.PaginatedResponse[schemas.BillResponse])
 async def get_bills(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = 1,
+    size: int = 20,
     client_id: Optional[int] = Query(None, description="Filter by client"),
     payment_status: Optional[str] = Query(None, description="Filter by payment status"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
 ):
-    """Get all bills with optional filters"""
+    """Get all bills with optional filters and pagination"""
     query = db.query(models.Bill)
     
     if client_id:
@@ -30,16 +32,27 @@ async def get_bills(
     if payment_status:
         query = query.filter(models.Bill.payment_status == payment_status)
     
-    bills = query.order_by(models.Bill.bill_date.desc()).offset(skip).limit(limit).all()
+    # Get total count
+    total = query.count()
     
-    result = []
+    # Pagination
+    skip = (page - 1) * size
+    bills = query.order_by(models.Bill.bill_date.desc()).offset(skip).limit(size).all()
+    
+    items = []
     for bill in bills:
         bill_dict = bill.__dict__.copy()
         bill_dict['client_name'] = bill.client.name if bill.client else None
         bill_dict['details'] = [schemas.BillDetailResponse(**d.__dict__) for d in bill.details]
-        result.append(schemas.BillResponse(**bill_dict))
+        items.append(schemas.BillResponse(**bill_dict))
     
-    return result
+    return schemas.PaginatedResponse(
+        items=items,
+        total=total,
+        page=page,
+        size=size,
+        pages=math.ceil(total / size)
+    )
 
 
 @router.get("/recent")

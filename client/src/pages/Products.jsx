@@ -9,11 +9,18 @@ import toast from 'react-hot-toast';
 export default function Products() {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
+
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const { user, branches } = useAuth();
     const [showModal, setShowModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        size: 20,
+        total: 0,
+        pages: 1
+    });
     const [formData, setFormData] = useState({
         product_name: '',
         description: '',
@@ -29,12 +36,22 @@ export default function Products() {
         fetchProducts();
         fetchCategories();
         fetchDepartments();
-    }, []);
+    }, [pagination.page]);
 
     const fetchProducts = async () => {
         try {
-            const response = await productsAPI.getAll({ active_only: false });
-            setProducts(response.data);
+            setLoading(true);
+            const response = await productsAPI.getAll({
+                active_only: false,
+                page: pagination.page,
+                size: pagination.size
+            });
+            setProducts(response.data.items);
+            setPagination(prev => ({
+                ...prev,
+                total: response.data.total,
+                pages: response.data.pages
+            }));
         } catch (error) {
             toast.error('Failed to fetch products');
         } finally {
@@ -231,6 +248,12 @@ export default function Products() {
                 data={products}
                 loading={loading}
                 emptyMessage="No products found"
+                pagination={{
+                    currentPage: pagination.page,
+                    totalPages: pagination.pages,
+                    totalItems: pagination.total,
+                    onPageChange: (page) => setPagination(prev => ({ ...prev, page }))
+                }}
                 actions={(row) => (
                     <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
                         <button
