@@ -20,6 +20,20 @@ from routers import users, clients, treatments, products, appointments, bills, a
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Auto-migrate clients table
+try:
+    from migrate_clients_department import add_department_id_to_clients
+    add_department_id_to_clients()
+except Exception as e:
+    print(f"Migration error: {e}")
+
+# Auto-seed departments
+try:
+    from seed_departments import seed_departments
+    seed_departments()
+except Exception as e:
+    print(f"Seeding error: {e}")
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Hairskiin CRM",

@@ -77,6 +77,7 @@ export default function Users() {
                     full_name: formData.full_name,
                     role: formData.role,
                     branch_id: formData.branch_id,
+                    department_id: formData.department_id,
                 });
                 toast.success('User updated');
             } else {
@@ -147,6 +148,8 @@ export default function Users() {
         admin: 'badge-primary',
         manager: 'badge-warning',
         receptionist: 'badge-neutral',
+        cashier: 'badge-success',
+        director: 'badge-primary',
     };
 
     const columns = [
@@ -337,6 +340,8 @@ export default function Users() {
                             <option value="receptionist">Receptionist</option>
                             <option value="manager">Manager</option>
                             <option value="admin">Admin</option>
+                            <option value="cashier">Cashier</option>
+                            <option value="director">Director</option>
                         </select>
                     </div>
 

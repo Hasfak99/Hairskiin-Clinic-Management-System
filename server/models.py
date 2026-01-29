@@ -9,6 +9,8 @@ class UserRole(str, enum.Enum):
     admin = "admin"
     receptionist = "receptionist"
     manager = "manager"
+    cashier = "cashier"
+    director = "director"
 
 
 class UserStatus(str, enum.Enum):
@@ -67,6 +69,7 @@ class Department(Base):
     branch = relationship("Branch", back_populates="departments")
     users = relationship("User", back_populates="department")
     products = relationship("Product", back_populates="department")
+    clients = relationship("Client", back_populates="department")
 
 
 # ==================== USERS ====================
@@ -106,11 +109,13 @@ class Client(Base):
     qr_code = Column(String(100), unique=True, nullable=True, index=True)  # Unique QR identifier
     registered_from_appointment = Column(Integer, nullable=True)  # Just stores ID, no FK to avoid circular ref
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=False, index=True)
+    department_id = Column(Integer, ForeignKey("departments.department_id"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
     branch = relationship("Branch", back_populates="clients")
+    department = relationship("Department", back_populates="clients")
     appointments = relationship("Appointment", back_populates="client")
     bills = relationship("Bill", back_populates="client")
 

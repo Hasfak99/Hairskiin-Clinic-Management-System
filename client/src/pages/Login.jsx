@@ -156,29 +156,7 @@ export default function Login() {
                     </button>
                 </form>
 
-                {/* Toggle */}
-                <p style={{
-                    textAlign: 'center',
-                    marginTop: 'var(--spacing-6)',
-                    color: 'var(--text-secondary)',
-                    fontSize: 'var(--font-size-sm)',
-                }}>
-                    {isLogin ? "Don't have an account? " : 'Already have an account? '}
-                    <button
-                        type="button"
-                        onClick={() => setIsLogin(!isLogin)}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#000000',
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                            textDecoration: 'underline',
-                        }}
-                    >
-                        {isLogin ? 'Create one' : 'Sign in'}
-                    </button>
-                </p>
+                {/* Toggle Removed */}
             </div>
         </div>
     );

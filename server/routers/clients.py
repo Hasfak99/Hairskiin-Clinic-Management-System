@@ -42,8 +42,15 @@ async def get_clients(
     skip = (page - 1) * size
     clients = query.order_by(models.Client.name).offset(skip).limit(size).all()
     
+    items = []
+    for client in clients:
+        client_dict = client.__dict__.copy()
+        client_dict['branch_name'] = client.branch.branch_name if client.branch else None
+        client_dict['department_name'] = client.department.department_name if client.department else None
+        items.append(schemas.ClientResponse(**client_dict))
+    
     return schemas.PaginatedResponse(
-        items=clients,
+        items=items,
         total=total,
         page=page,
         size=size,
@@ -100,6 +107,8 @@ async def lookup_client_by_phone(
     
     return schemas.ClientWithHistory(
         **client.__dict__,
+        branch_name=client.branch.branch_name if client.branch else None,
+        department_name=client.department.department_name if client.department else None,
         total_appointments=total_appointments,
         total_spent=total_spent,
         last_visit=last_appointment.created_at if last_appointment else None,
@@ -132,6 +141,8 @@ async def get_client(
     
     return schemas.ClientWithHistory(
         **client.__dict__,
+        branch_name=client.branch.branch_name if client.branch else None,
+        department_name=client.department.department_name if client.department else None,
         total_appointments=total_appointments,
         total_spent=total_spent,
         last_visit=last_appointment.created_at if last_appointment else None
@@ -171,12 +182,21 @@ async def create_client(
             pass
             
     db_client_data['client_code'] = f"{prefix}{next_seq:03d}"
+    
+    # Auto-assign department if user belongs to one
+    if current_user.department_id:
+        db_client_data['department_id'] = current_user.department_id
 
     db_client = models.Client(**db_client_data)
     db.add(db_client)
     db.commit()
     db.refresh(db_client)
-    return db_client
+    
+    # Manually populate department_name for response
+    client_dict = db_client.__dict__.copy()
+    client_dict['branch_name'] = db_client.branch.branch_name if db_client.branch else None
+    client_dict['department_name'] = db_client.department.department_name if db_client.department else None
+    return schemas.ClientResponse(**client_dict)
 
 
 @router.put("/{client_id}", response_model=schemas.ClientResponse)
@@ -203,7 +223,12 @@ async def update_client(
     
     db.commit()
     db.refresh(db_client)
-    return db_client
+    
+    # Manually populate department_name
+    client_dict = db_client.__dict__.copy()
+    client_dict['branch_name'] = db_client.branch.branch_name if db_client.branch else None
+    client_dict['department_name'] = db_client.department.department_name if db_client.department else None
+    return schemas.ClientResponse(**client_dict)
 
 
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -343,6 +368,8 @@ async def scan_client_qr(
     
     return schemas.ClientWithHistory(
         **client.__dict__,
+        branch_name=client.branch.branch_name if client.branch else None,
+        department_name=client.department.department_name if client.department else None,
         total_appointments=total_appointments,
         total_spent=total_spent,
         last_visit=last_appointment.created_at if last_appointment else None,
@@ -390,6 +417,8 @@ async def public_scan_client_qr(
     
     return schemas.ClientWithHistory(
         **client.__dict__,
+        branch_name=client.branch.branch_name if client.branch else None,
+        department_name=client.department.department_name if client.department else None,
         total_appointments=total_appointments,
         total_spent=total_spent,
         last_visit=last_appointment.created_at if last_appointment else None,

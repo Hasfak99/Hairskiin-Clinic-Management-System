@@ -25,7 +25,8 @@ async def get_departments(
         query = query.filter(models.Department.is_active == True)
     
     if branch_id:
-        query = query.filter(models.Department.branch_id == branch_id)
+        # Show specific branch departments AND global departments
+        query = query.filter((models.Department.branch_id == branch_id) | (models.Department.branch_id == None))
     
     departments = query.offset(skip).limit(limit).all()
     result = []

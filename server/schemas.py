@@ -20,6 +20,8 @@ class UserRole(str, Enum):
     admin = "admin"
     receptionist = "receptionist"
     manager = "manager"
+    cashier = "cashier"
+    director = "director"
 
 
 class UserStatus(str, Enum):
@@ -162,6 +164,7 @@ class ClientBase(BaseModel):
     qr_code: Optional[str] = None  # NEW: QR code identifier
     registered_from_appointment: Optional[int] = None  # NEW: conversion tracking
     branch_id: int
+    department_id: Optional[int] = None
 
 
 class ClientCreate(ClientBase):
@@ -183,6 +186,7 @@ class ClientResponse(ClientBase):
     created_at: datetime
     updated_at: datetime
     branch_name: Optional[str] = None
+    department_name: Optional[str] = None
 
     class Config:
         from_attributes = True
