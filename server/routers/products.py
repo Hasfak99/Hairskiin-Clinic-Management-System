@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
+from datetime import datetime
 from database import get_db
 import models
 import schemas
@@ -55,7 +56,15 @@ async def get_products(
         query = query.filter(models.Product.stock_qty <= models.Product.min_stock)
     
     products = query.order_by(models.Product.product_name).offset(skip).limit(limit).all()
-    return products
+    
+    result = []
+    for p in products:
+        p_dict = p.__dict__.copy()
+        p_dict['branch_name'] = p.branch.branch_name if p.branch else None
+        p_dict['department_name'] = p.department.department_name if p.department else None
+        result.append(schemas.ProductResponse(**p_dict))
+    
+    return result
 
 
 @router.get("/categories")
@@ -112,6 +121,26 @@ async def create_product(
     
     product_data = product.model_dump()
     product_data['branch_id'] = branch_id
+
+    # Generate Auto ID: PRD-YYYY-MM-DD-XXX
+    now = datetime.now()
+    prefix = f"PRD-{now.year}-{now.month:02d}-{now.day:02d}-"
+    
+    # Find last code with this prefix (Daily Sequence)
+    last_item = db.query(models.Product)\
+        .filter(models.Product.product_code.like(f"{prefix}%"))\
+        .order_by(models.Product.product_code.desc())\
+        .first()
+        
+    next_seq = 1
+    if last_item and last_item.product_code:
+        try:
+            current_seq_str = last_item.product_code.split('-')[-1]
+            next_seq = int(current_seq_str) + 1
+        except (ValueError, IndexError):
+            pass
+            
+    product_data['product_code'] = f"{prefix}{next_seq:03d}"
     db_product = models.Product(**product_data)
     db.add(db_product)
     db.commit()

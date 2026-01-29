@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Package, AlertTriangle } from 'lucide-react';
-import { productsAPI } from '../api';
+import { productsAPI, departmentsAPI } from '../api';
+import { useAuth } from '../context/AuthContext';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -8,7 +9,9 @@ import toast from 'react-hot-toast';
 export default function Products() {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user, branches } = useAuth();
     const [showModal, setShowModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [formData, setFormData] = useState({
@@ -18,11 +21,14 @@ export default function Products() {
         stock_qty: '',
         min_stock: '5',
         category: '',
+        branch_id: '',
+        department_id: '',
     });
 
     useEffect(() => {
         fetchProducts();
         fetchCategories();
+        fetchDepartments();
     }, []);
 
     const fetchProducts = async () => {
@@ -45,6 +51,15 @@ export default function Products() {
         }
     };
 
+    const fetchDepartments = async () => {
+        try {
+            const response = await departmentsAPI.getAll();
+            setDepartments(response.data);
+        } catch (error) {
+            console.error('Error fetching departments:', error);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -53,6 +68,8 @@ export default function Products() {
                 price: parseFloat(formData.price),
                 stock_qty: parseInt(formData.stock_qty),
                 min_stock: parseInt(formData.min_stock),
+                branch_id: formData.branch_id ? parseInt(formData.branch_id) : (user?.branch_id || null),
+                department_id: formData.department_id ? parseInt(formData.department_id) : null,
             };
             if (selectedProduct) {
                 await productsAPI.update(selectedProduct.product_id, data);
@@ -89,16 +106,42 @@ export default function Products() {
             stock_qty: product.stock_qty.toString(),
             min_stock: product.min_stock.toString(),
             category: product.category || '',
+            branch_id: product.branch_id || '',
+            department_id: product.department_id || '',
         });
         setShowModal(true);
     };
 
     const resetForm = () => {
         setSelectedProduct(null);
-        setFormData({ product_name: '', description: '', price: '', stock_qty: '', min_stock: '5', category: '' });
+        setFormData({
+            product_name: '',
+            description: '',
+            price: '',
+            stock_qty: '',
+            min_stock: '5',
+            category: '',
+            branch_id: user?.role === 'admin' ? '' : (user?.branch_id || ''),
+            department_id: ''
+        });
     };
 
     const columns = [
+        {
+            key: 'product_code',
+            label: 'ID',
+            render: (val) => (
+                <span style={{
+                    fontFamily: 'monospace',
+                    fontSize: '12px',
+                    background: 'var(--surface-muted)',
+                    padding: '2px 6px',
+                    borderRadius: '4px'
+                }}>
+                    {val || '-'}
+                </span>
+            ),
+        },
         {
             key: 'product_name',
             label: 'Name',
@@ -234,6 +277,38 @@ export default function Products() {
                             onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
                             required
                         />
+                    </div>
+
+                    {/* Branch (Admin Only) */}
+                    {user?.role === 'admin' && (
+                        <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
+                            <label className="input-label">Branch</label>
+                            <select
+                                className="input"
+                                value={formData.branch_id}
+                                onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                            >
+                                <option value="">Global / No Branch</option>
+                                {branches.map(b => (
+                                    <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    {/* Department Selection */}
+                    <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
+                        <label className="input-label">Department</label>
+                        <select
+                            className="input"
+                            value={formData.department_id}
+                            onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
+                        >
+                            <option value="">Select Department</option>
+                            {departments.map(d => (
+                                <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="grid grid-cols-2" style={{ gap: 'var(--spacing-4)', marginBottom: 'var(--spacing-4)' }}>

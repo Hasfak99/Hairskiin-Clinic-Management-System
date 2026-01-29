@@ -66,6 +66,7 @@ class Department(Base):
     # Relationships
     branch = relationship("Branch", back_populates="departments")
     users = relationship("User", back_populates="department")
+    products = relationship("Product", back_populates="department")
 
 
 # ==================== USERS ====================
@@ -73,6 +74,7 @@ class User(Base):
     __tablename__ = "users"
 
     user_id = Column(Integer, primary_key=True, index=True)
+    user_code = Column(String(20), unique=True, nullable=True, index=True)  # USR-YYYY-MM-DD-XXX
     username = Column(String(50), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(100), nullable=True)
@@ -93,6 +95,7 @@ class Client(Base):
     __tablename__ = "clients"
 
     client_id = Column(Integer, primary_key=True, index=True)
+    client_code = Column(String(20), unique=True, nullable=True, index=True)  # CLT-YYYY-MM-DD-XXX
     name = Column(String(100), nullable=False, index=True)
     phone = Column(String(20), nullable=False, index=True)
     email = Column(String(100), nullable=True)
@@ -118,6 +121,7 @@ class Treatment(Base):
 
     treatment_id = Column(Integer, primary_key=True, index=True)
     treatment_name = Column(String(100), nullable=False, index=True)
+    treatment_code = Column(String(20), unique=True, nullable=True, index=True)  # custom ID like TRT-2026-001
     description = Column(Text, nullable=True)
     price = Column(Float, nullable=False)
     duration = Column(Integer, nullable=False)  # in minutes
@@ -138,6 +142,7 @@ class Product(Base):
     __tablename__ = "products"
 
     product_id = Column(Integer, primary_key=True, index=True)
+    product_code = Column(String(20), unique=True, nullable=True, index=True)  # PRD-YYYY-MM-DD-XXX
     product_name = Column(String(100), nullable=False, index=True)
     description = Column(Text, nullable=True)
     price = Column(Float, nullable=False)
@@ -146,12 +151,14 @@ class Product(Base):
     category = Column(String(50), nullable=True)
     is_active = Column(Boolean, default=True)
     is_global = Column(Boolean, default=False)  # True = shared across all branches
-    branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=False, index=True)
+    branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=True, index=True)
+    department_id = Column(Integer, ForeignKey("departments.department_id"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
     branch = relationship("Branch", back_populates="products")
+    department = relationship("Department", back_populates="products")
 
 
 # ==================== APPOINTMENTS ====================

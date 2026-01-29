@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from typing import List, Optional
 import uuid
+from datetime import datetime
 from database import get_db
 import models
 import schemas
@@ -135,7 +136,29 @@ async def create_client(
     if existing:
         raise HTTPException(status_code=400, detail="Phone number already registered")
     
-    db_client = models.Client(**client.model_dump())
+    db_client_data = client.model_dump()
+    
+    # Generate Auto ID: CLT-YYYY-MM-DD-XXX
+    now = datetime.now()
+    prefix = f"CLT-{now.year}-{now.month:02d}-{now.day:02d}-"
+    
+    # Find last code with this prefix (Daily Sequence)
+    last_item = db.query(models.Client)\
+        .filter(models.Client.client_code.like(f"{prefix}%"))\
+        .order_by(models.Client.client_code.desc())\
+        .first()
+        
+    next_seq = 1
+    if last_item and last_item.client_code:
+        try:
+            current_seq_str = last_item.client_code.split('-')[-1]
+            next_seq = int(current_seq_str) + 1
+        except (ValueError, IndexError):
+            pass
+            
+    db_client_data['client_code'] = f"{prefix}{next_seq:03d}"
+
+    db_client = models.Client(**db_client_data)
     db.add(db_client)
     db.commit()
     db.refresh(db_client)

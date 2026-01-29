@@ -129,6 +129,7 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     user_id: int
+    user_code: Optional[str] = None
     status: UserStatus
     created_at: datetime
     branch_name: Optional[str] = None
@@ -167,7 +168,9 @@ class ClientUpdate(BaseModel):
 
 class ClientResponse(ClientBase):
     client_id: int
+    client_code: Optional[str] = None
     created_at: datetime
+    updated_at: datetime
     branch_name: Optional[str] = None
 
     class Config:
@@ -219,8 +222,10 @@ class TreatmentUpdate(BaseModel):
 
 class TreatmentResponse(TreatmentBase):
     treatment_id: int
+    treatment_code: Optional[str] = None
     is_active: bool
     created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True
@@ -236,6 +241,7 @@ class ProductBase(BaseModel):
     category: Optional[str] = None
     is_global: Optional[bool] = False  # NEW: shared across branches
     branch_id: Optional[int] = None
+    department_id: Optional[int] = None
 
 
 class ProductCreate(ProductBase):
@@ -251,12 +257,18 @@ class ProductUpdate(BaseModel):
     category: Optional[str] = None
     is_active: Optional[bool] = None
     is_global: Optional[bool] = None  # NEW
+    branch_id: Optional[int] = None
+    department_id: Optional[int] = None
 
 
 class ProductResponse(ProductBase):
     product_id: int
+    product_code: Optional[str] = None
     is_active: bool
     created_at: datetime
+    updated_at: datetime
+    branch_name: Optional[str] = None
+    department_name: Optional[str] = None
 
     class Config:
         from_attributes = True

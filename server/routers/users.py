@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import datetime
 from database import get_db
 import models
 import schemas
@@ -70,13 +71,34 @@ async def create_user(
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
     
+    # Generate Auto ID: USR-YYYY-MM-DD-XXX
+    now = datetime.now()
+    prefix = f"USR-{now.year}-{now.month:02d}-{now.day:02d}-"
+    
+    # Find last code with this prefix (Daily Sequence)
+    last_user = db.query(models.User)\
+        .filter(models.User.user_code.like(f"{prefix}%"))\
+        .order_by(models.User.user_code.desc())\
+        .first()
+        
+    next_seq = 1
+    if last_user and last_user.user_code:
+        try:
+            current_seq_str = last_user.user_code.split('-')[-1]
+            next_seq = int(current_seq_str) + 1
+        except (ValueError, IndexError):
+            pass
+            
+    user_code = f"{prefix}{next_seq:03d}"
+
     db_user = models.User(
         username=user.username,
         password_hash=get_password_hash(user.password),
         full_name=user.full_name,
         role=user.role.value,
         branch_id=user.branch_id,
-        department_id=user.department_id
+        department_id=user.department_id,
+        user_code=user_code
     )
     db.add(db_user)
     db.commit()

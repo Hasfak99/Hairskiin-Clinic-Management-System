@@ -137,6 +137,21 @@ export default function Users() {
 
     const columns = [
         {
+            key: 'user_code',
+            label: 'ID',
+            render: (val) => (
+                <span style={{
+                    fontFamily: 'monospace',
+                    fontSize: '12px',
+                    background: 'var(--surface-muted)',
+                    padding: '2px 6px',
+                    borderRadius: '4px'
+                }}>
+                    {val || '-'}
+                </span>
+            ),
+        },
+        {
             key: 'username',
             label: 'Username',
             render: (val, row) => (

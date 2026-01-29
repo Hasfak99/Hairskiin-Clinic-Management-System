@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
+from datetime import datetime
 from database import get_db
 import models
 import schemas
@@ -96,6 +97,28 @@ async def create_treatment(
     
     treatment_data = treatment.model_dump()
     treatment_data['branch_id'] = branch_id
+
+    # Generate Auto ID: TRT-YYYY-MM-DD-XXX
+    now = datetime.now()
+    prefix = f"TRT-{now.year}-{now.month:02d}-{now.day:02d}-"
+    
+    # Find last code with this prefix (Daily Sequence)
+    last_treatment = db.query(models.Treatment)\
+        .filter(models.Treatment.treatment_code.like(f"{prefix}%"))\
+        .order_by(models.Treatment.treatment_code.desc())\
+        .first()
+        
+    next_seq = 1
+    if last_treatment and last_treatment.treatment_code:
+        try:
+            # Extract sequence number from TRT-YYYY-MM-DD-001
+            current_seq_str = last_treatment.treatment_code.split('-')[-1]
+            next_seq = int(current_seq_str) + 1
+        except (ValueError, IndexError):
+            pass
+            
+    treatment_data['treatment_code'] = f"{prefix}{next_seq:03d}"
+
     db_treatment = models.Treatment(**treatment_data)
     db.add(db_treatment)
     db.commit()
