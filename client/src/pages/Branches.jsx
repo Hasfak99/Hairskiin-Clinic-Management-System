@@ -12,7 +12,7 @@ export default function Branches() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedBranch, setSelectedBranch] = useState(null);
-    const { isAdmin, isManager } = useAuth();
+    const { isAdmin, isManager, refreshBranches } = useAuth();
     const [formData, setFormData] = useState({
         branch_name: '',
         address: '',
@@ -51,6 +51,8 @@ export default function Branches() {
             setSelectedBranch(null);
             setFormData({ branch_name: '', address: '', phone: '', email: '' });
             fetchBranches();
+            // Refresh global context branches
+            if (refreshBranches) await refreshBranches();
         } catch (error) {
             console.error('Submission error:', error);
             const detail = error.response?.data?.detail;
@@ -83,6 +85,8 @@ export default function Branches() {
             await branchesAPI.delete(branch.branch_id);
             toast.success('Branch deleted');
             fetchBranches();
+            // Refresh global context branches
+            if (refreshBranches) await refreshBranches();
         } catch (error) {
             toast.error(error.response?.data?.detail || 'Failed to delete branch');
         }

@@ -17,16 +17,16 @@ import {
 import { useState } from 'react';
 
 const navItems = [
-    { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'manager', 'receptionist'] },
-    { path: '/clients', icon: Users, label: 'Clients', roles: ['admin', 'manager', 'receptionist'] },
-    { path: '/appointments', icon: Calendar, label: 'Appointments', roles: ['admin', 'manager', 'receptionist'] },
-    { path: '/treatments', icon: Scissors, label: 'Treatments', roles: ['admin', 'manager'] },
-    { path: '/products', icon: Package, label: 'Products', roles: ['admin', 'manager'] },
-    { path: '/billing', icon: Receipt, label: 'Billing', roles: ['admin', 'manager', 'receptionist'] },
-    { path: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'manager'] },
-    { path: '/branches', icon: Building2, label: 'Branches', roles: ['admin', 'manager'] },
-    { path: '/departments', icon: Building2, label: 'Departments', roles: ['admin'] },
-    { path: '/users', icon: Settings, label: 'Users', roles: ['admin'] },
+    { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'manager', 'receptionist', 'director', 'cashier'] },
+    { path: '/clients', icon: Users, label: 'Clients', roles: ['admin', 'manager', 'receptionist', 'director', 'cashier'] },
+    { path: '/appointments', icon: Calendar, label: 'Appointments', roles: ['admin', 'manager', 'receptionist', 'director', 'cashier'] },
+    { path: '/treatments', icon: Scissors, label: 'Treatments', roles: ['admin', 'manager', 'director'] },
+    { path: '/products', icon: Package, label: 'Products', roles: ['admin', 'manager', 'director'], departmentRestricted: true },
+    { path: '/billing', icon: Receipt, label: 'Billing', roles: ['admin', 'manager', 'receptionist', 'cashier', 'director'] },
+    { path: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'manager', 'director'] },
+    { path: '/branches', icon: Building2, label: 'Branches', roles: ['admin', 'manager', 'director'] },
+    { path: '/departments', icon: Building2, label: 'Departments', roles: ['admin', 'director'] },
+    { path: '/users', icon: Settings, label: 'Users', roles: ['admin', 'director'] },
 ];
 
 export default function Sidebar() {
@@ -34,9 +34,25 @@ export default function Sidebar() {
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(false);
 
-    const filteredNavItems = navItems.filter(item =>
-        item.roles.includes(user?.role)
-    );
+    const filteredNavItems = navItems.filter(item => {
+        // 1. Role Check
+        const hasRole = item.roles.includes(user?.role);
+        if (!hasRole) return false;
+
+        // 2. Department Restriction (Specific to Hair Skin Clinic request)
+        // "Products" only visible if 'Hair Skin Clinic' OR Admin/Director
+        if (item.departmentRestricted) {
+            const isRestrictedDept = user?.department_name !== 'Hair Skin Clinic';
+            const isPrivileged = ['admin', 'director'].includes(user?.role);
+
+            // If user is from another department (e.g. Harskin) AND not privileged, HIDE it
+            if (isRestrictedDept && !isPrivileged) {
+                return false;
+            }
+        }
+
+        return true;
+    });
 
     return (
         <>

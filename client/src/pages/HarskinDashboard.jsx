@@ -96,7 +96,7 @@ export default function HarskinDashboard() {
                         Harskin Dashboard
                     </h1>
                     <p className="page-subtitle">
-                        Welcome, {user?.full_name?.split(' ')[0] || user?.username}.
+                        Welcome, {user?.full_name?.split(' ')[0] || user?.username} ({user?.branch_name || 'Head Office'}).
                     </p>
                 </div>
                 <Link to="/appointments" className="btn btn-secondary">

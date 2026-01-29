@@ -70,6 +70,9 @@ class Department(Base):
     users = relationship("User", back_populates="department")
     products = relationship("Product", back_populates="department")
     clients = relationship("Client", back_populates="department")
+    treatments = relationship("Treatment", back_populates="department")
+    bills = relationship("Bill", back_populates="department")
+    appointments = relationship("Appointment", back_populates="department")
 
 
 # ==================== USERS ====================
@@ -134,11 +137,13 @@ class Treatment(Base):
     is_active = Column(Boolean, default=True)
     is_global = Column(Boolean, default=False)  # True = shared across all branches
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=False, index=True)
+    department_id = Column(Integer, ForeignKey("departments.department_id"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
     branch = relationship("Branch", back_populates="treatments")
+    department = relationship("Department", back_populates="treatments")
     appointments = relationship("Appointment", back_populates="treatment")
 
 
@@ -174,6 +179,7 @@ class Appointment(Base):
     client_id = Column(Integer, ForeignKey("clients.client_id"), nullable=True)  # Nullable for walk-ins
     treatment_id = Column(Integer, ForeignKey("treatments.treatment_id"), nullable=False)
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=False, index=True)
+    department_id = Column(Integer, ForeignKey("departments.department_id"), nullable=True, index=True)
     appointment_date = Column(Date, nullable=False, index=True)
     appointment_time = Column(Time, nullable=False)
     status = Column(String(20), default=AppointmentStatus.booked.value)
@@ -191,6 +197,7 @@ class Appointment(Base):
     # Relationships
     branch = relationship("Branch", back_populates="appointments")
     client = relationship("Client", back_populates="appointments")
+    department = relationship("Department", back_populates="appointments")
     treatment = relationship("Treatment", back_populates="appointments")
     bill = relationship("Bill", back_populates="appointment", uselist=False)
 
@@ -203,6 +210,7 @@ class Bill(Base):
     client_id = Column(Integer, ForeignKey("clients.client_id"), nullable=False)
     appointment_id = Column(Integer, ForeignKey("appointments.appointment_id"), nullable=True)
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=False, index=True)
+    department_id = Column(Integer, ForeignKey("departments.department_id"), nullable=True, index=True)
     total_amount = Column(Float, default=0.0)
     discount = Column(Float, default=0.0)
     tax = Column(Float, default=0.0)
@@ -216,6 +224,7 @@ class Bill(Base):
 
     # Relationships
     branch = relationship("Branch", back_populates="bills")
+    department = relationship("Department", back_populates="bills", foreign_keys=[department_id])
     client = relationship("Client", back_populates="bills")
     appointment = relationship("Appointment", back_populates="bill")
     details = relationship("BillDetail", back_populates="bill", cascade="all, delete-orphan")

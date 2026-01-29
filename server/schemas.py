@@ -219,6 +219,7 @@ class TreatmentBase(BaseModel):
     category: Optional[str] = None
     is_global: Optional[bool] = False  # NEW: shared across branches
     branch_id: Optional[int] = None
+    department_id: Optional[int] = None  # NEW: Department link
 
 
 class TreatmentCreate(TreatmentBase):
@@ -233,6 +234,7 @@ class TreatmentUpdate(BaseModel):
     category: Optional[str] = None
     is_active: Optional[bool] = None
     is_global: Optional[bool] = None  # NEW
+    department_id: Optional[int] = None  # NEW
 
 
 class TreatmentResponse(TreatmentBase):
@@ -241,6 +243,7 @@ class TreatmentResponse(TreatmentBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    department_name: Optional[str] = None  # NEW
 
     class Config:
         from_attributes = True
@@ -324,6 +327,7 @@ class AppointmentUpdate(BaseModel):
     status: Optional[AppointmentStatus] = None
     payment_status: Optional[str] = None  # NEW
     notes: Optional[str] = None
+    department_id: Optional[int] = None  # NEW
 
 
 class AppointmentResponse(AppointmentBase):
@@ -335,6 +339,7 @@ class AppointmentResponse(AppointmentBase):
     client_name: Optional[str] = None
     treatment_name: Optional[str] = None
     treatment_price: Optional[float] = None
+    department_name: Optional[str] = None  # NEW
 
     class Config:
         from_attributes = True
@@ -370,6 +375,7 @@ class BillBase(BaseModel):
     payment_method: Optional[str] = None
     notes: Optional[str] = None
     branch_id: int
+    department_id: Optional[int] = None  # NEW
 
 
 class BillCreate(BillBase):
@@ -382,6 +388,7 @@ class BillUpdate(BaseModel):
     payment_method: Optional[str] = None
     payment_status: Optional[str] = None
     notes: Optional[str] = None
+    department_id: Optional[int] = None  # NEW
 
 
 class BillResponse(BillBase):
@@ -392,6 +399,7 @@ class BillResponse(BillBase):
     bill_date: datetime
     details: List[BillDetailResponse] = []
     client_name: Optional[str] = None
+    department_name: Optional[str] = None  # NEW
 
     class Config:
         from_attributes = True

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Printer, Receipt, Search, Trash2, QrCode } from 'lucide-react';
-import { billsAPI, clientsAPI, treatmentsAPI, productsAPI } from '../api';
+import { billsAPI, clientsAPI, treatmentsAPI, productsAPI, branchesAPI, departmentsAPI } from '../api';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -17,6 +17,8 @@ export default function Billing() {
     const [clients, setClients] = useState([]);
     const [treatments, setTreatments] = useState([]);
     const [products, setProducts] = useState([]);
+    const [branches, setBranches] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
@@ -33,6 +35,8 @@ export default function Billing() {
 
     const [formData, setFormData] = useState({
         client_id: '',
+        branch_id: '',
+        department_id: '',
         items: [],
         discount: 0,
         tax: 0,
@@ -54,7 +58,21 @@ export default function Billing() {
 
     useEffect(() => {
         fetchData();
+        fetchMetadata();
     }, [pagination.page]);
+
+    const fetchMetadata = async () => {
+        try {
+            const [branchRes, deptRes] = await Promise.all([
+                branchesAPI.getAll(),
+                departmentsAPI.getAll()
+            ]);
+            setBranches(branchRes.data);
+            setDepartments(deptRes.data);
+        } catch (error) {
+            console.error('Error fetching metadata', error);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -136,6 +154,8 @@ export default function Billing() {
         }
         try {
             let finalClientId = formData.client_id;
+            const finalBranchId = formData.branch_id ? parseInt(formData.branch_id) : (selectedBranch?.branch_id || 1);
+            const finalDeptId = formData.department_id ? parseInt(formData.department_id) : null;
 
             // Handle New Client creation
             if (createClientMode) {
@@ -148,7 +168,7 @@ export default function Billing() {
                     phone: newClientData.phone,
                     email: '', // Optional
                     address: '', // Optional
-                    branch_id: selectedBranch?.branch_id || 1 // Default to 1 if not selected, or handle error
+                    branch_id: finalBranchId
                 });
                 finalClientId = clientRes.data.client_id;
             } else if (!finalClientId) {
@@ -159,7 +179,8 @@ export default function Billing() {
             const payload = {
                 ...formData,
                 client_id: finalClientId,
-                branch_id: selectedBranch?.branch_id || 1 // Default to 1 if not selected
+                branch_id: finalBranchId,
+                department_id: finalDeptId
             };
 
             const response = await billsAPI.create(payload);
@@ -197,6 +218,8 @@ export default function Billing() {
         setCashReceived(0);
         setFormData({
             client_id: '',
+            branch_id: selectedBranch?.branch_id || '',
+            department_id: '',
             items: [],
             discount: 0,
             tax: 0,
@@ -223,6 +246,11 @@ export default function Billing() {
             ),
         },
         { key: 'client_name', label: 'Client' },
+        {
+            key: 'department_name',
+            label: 'Department',
+            render: (val) => val || '-'
+        },
         {
             key: 'final_amount',
             label: 'Amount',
@@ -309,6 +337,35 @@ export default function Billing() {
                 }
             >
                 <form onSubmit={handleSubmit}>
+                    <div className="grid grid-cols-2" style={{ gap: 'var(--spacing-4)', marginBottom: 'var(--spacing-4)' }}>
+                        <div className="input-group">
+                            <label className="input-label">Branch</label>
+                            <select
+                                className="input"
+                                value={formData.branch_id}
+                                onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                            >
+                                <option value="">Default (Your Branch)</option>
+                                {branches.map(b => (
+                                    <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="input-group">
+                            <label className="input-label">Department</label>
+                            <select
+                                className="input"
+                                value={formData.department_id}
+                                onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
+                            >
+                                <option value="">Select Department</option>
+                                {departments.map(d => (
+                                    <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
                     <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-2)' }}>
                             <label className="input-label" style={{ marginBottom: 0 }}>Client *</label>
@@ -603,6 +660,12 @@ export default function Billing() {
                         <div style={{ marginBottom: 'var(--spacing-4)' }}>
                             <p style={{ color: 'var(--text-muted)' }}>Client</p>
                             <p style={{ fontWeight: 500 }}>{selectedBill.client_name}</p>
+
+                            {selectedBill.department_name && (
+                                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)', marginTop: 4 }}>
+                                    Department: {selectedBill.department_name}
+                                </p>
+                            )}
                         </div>
 
                         <div style={{ marginBottom: 'var(--spacing-4)' }}>
@@ -691,6 +754,6 @@ export default function Billing() {
                     </>
                 )
             }
-        </div >
+        </div>
     );
 }

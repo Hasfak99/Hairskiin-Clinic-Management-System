@@ -57,6 +57,7 @@ async def get_appointments(
         apt_dict['client_name'] = apt.client.name if apt.client else None
         apt_dict['treatment_name'] = apt.treatment.treatment_name if apt.treatment else None
         apt_dict['treatment_price'] = apt.treatment.price if apt.treatment else None
+        apt_dict['department_name'] = apt.department.department_name if apt.department else None
         items.append(schemas.AppointmentResponse(**apt_dict))
     
     return schemas.PaginatedResponse(
@@ -86,6 +87,7 @@ async def get_today_appointments(
         apt_dict['client_name'] = apt.client.name if apt.client else None
         apt_dict['treatment_name'] = apt.treatment.treatment_name if apt.treatment else None
         apt_dict['treatment_price'] = apt.treatment.price if apt.treatment else None
+        apt_dict['department_name'] = apt.department.department_name if apt.department else None
         result.append(schemas.AppointmentResponse(**apt_dict))
     
     return result
@@ -114,6 +116,7 @@ async def get_upcoming_appointments(
         apt_dict['client_name'] = apt.client.name if apt.client else None
         apt_dict['treatment_name'] = apt.treatment.treatment_name if apt.treatment else None
         apt_dict['treatment_price'] = apt.treatment.price if apt.treatment else None
+        apt_dict['department_name'] = apt.department.department_name if apt.department else None
         result.append(schemas.AppointmentResponse(**apt_dict))
     
     return result
@@ -178,6 +181,7 @@ async def get_appointment(
     apt_dict['client_name'] = apt.client.name if apt.client else None
     apt_dict['treatment_name'] = apt.treatment.treatment_name if apt.treatment else None
     apt_dict['treatment_price'] = apt.treatment.price if apt.treatment else None
+    apt_dict['department_name'] = apt.department.department_name if apt.department else None
     
     return schemas.AppointmentResponse(**apt_dict)
 
@@ -220,6 +224,7 @@ async def create_appointment(
     apt_dict['client_name'] = client.name
     apt_dict['treatment_name'] = treatment.treatment_name
     apt_dict['treatment_price'] = treatment.price
+    apt_dict['department_name'] = db_appointment.department.department_name if db_appointment.department else None
     
     return schemas.AppointmentResponse(**apt_dict)
 
@@ -251,6 +256,7 @@ async def update_appointment(
     apt_dict['client_name'] = db_apt.client.name if db_apt.client else None
     apt_dict['treatment_name'] = db_apt.treatment.treatment_name if db_apt.treatment else None
     apt_dict['treatment_price'] = db_apt.treatment.price if db_apt.treatment else None
+    apt_dict['department_name'] = db_apt.department.department_name if db_apt.department else None
     
     return schemas.AppointmentResponse(**apt_dict)
 
@@ -339,6 +345,7 @@ async def create_walkin_appointment(
     apt_dict['client_name'] = appointment.guest_name  # Use guest name
     apt_dict['treatment_name'] = treatment.treatment_name
     apt_dict['treatment_price'] = treatment.price
+    apt_dict['department_name'] = db_appointment.department.department_name if db_appointment.department else None
     
     return schemas.AppointmentResponse(**apt_dict)
 

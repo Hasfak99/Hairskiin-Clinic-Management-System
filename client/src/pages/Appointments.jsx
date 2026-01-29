@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Calendar, Clock, User, CheckCircle, XCircle } from 'lucide-react';
-import { appointmentsAPI, clientsAPI, treatmentsAPI } from '../api';
+import { appointmentsAPI, clientsAPI, treatmentsAPI, departmentsAPI } from '../api';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -10,12 +10,14 @@ export default function Appointments() {
     const [appointments, setAppointments] = useState([]);
     const [clients, setClients] = useState([]);
     const [treatments, setTreatments] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [formData, setFormData] = useState({
         client_id: '',
         treatment_id: '',
+        department_id: '',
         appointment_date: format(new Date(), 'yyyy-MM-dd'),
         appointment_time: '10:00',
         notes: '',
@@ -34,13 +36,14 @@ export default function Appointments() {
 
     const fetchData = async () => {
         try {
-            const [aptRes, clientRes, treatRes] = await Promise.all([
+            const [aptRes, clientRes, treatRes, deptRes] = await Promise.all([
                 appointmentsAPI.getAll({
                     page: pagination.page,
                     size: pagination.size
                 }),
                 clientsAPI.getAll(),
                 treatmentsAPI.getAll(),
+                departmentsAPI.getAll(),
             ]);
             setAppointments(aptRes.data.items);
             setPagination(prev => ({
@@ -50,6 +53,7 @@ export default function Appointments() {
             }));
             setClients(clientRes.data.items || clientRes.data);
             setTreatments(treatRes.data.items || treatRes.data);
+            setDepartments(deptRes.data);
         } catch (error) {
             toast.error('Failed to fetch data');
         } finally {
@@ -108,6 +112,7 @@ export default function Appointments() {
             treatment_id: apt.treatment_id,
             appointment_date: apt.appointment_date,
             appointment_time: apt.appointment_time,
+            department_id: apt.department_id || '',
             notes: apt.notes || '',
         });
         setSelectedTreatment(treatments.find(t => t.treatment_id === apt.treatment_id));
@@ -121,6 +126,7 @@ export default function Appointments() {
             treatment_id: '',
             appointment_date: format(new Date(), 'yyyy-MM-dd'),
             appointment_time: '10:00',
+            department_id: '',
             notes: '',
         });
         setSelectedTreatment(null);
@@ -144,6 +150,11 @@ export default function Appointments() {
             ),
         },
         { key: 'treatment_name', label: 'Treatment' },
+        {
+            key: 'department_name',
+            label: 'Department',
+            render: (val) => val || '-'
+        },
         {
             key: 'appointment_date',
             label: 'Date',
@@ -294,6 +305,20 @@ export default function Appointments() {
                                 <option key={t.treatment_id} value={t.treatment_id}>
                                     {t.treatment_name} - LKR {t.price}
                                 </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
+                        <label className="input-label">Department</label>
+                        <select
+                            className="input"
+                            value={formData.department_id}
+                            onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
+                        >
+                            <option value="">Select Department</option>
+                            {departments.map(d => (
+                                <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
                             ))}
                         </select>
                     </div>

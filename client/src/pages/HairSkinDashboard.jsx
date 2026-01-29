@@ -120,7 +120,7 @@ export default function HairSkinDashboard() {
                         Hair Skin Clinic Dashboard
                     </h1>
                     <p className="page-subtitle">
-                        Welcome back, {user?.full_name?.split(' ')[0] || user?.username}! 👋
+                        Welcome back, {user?.full_name?.split(' ')[0] || user?.username}! 👋 ({user?.branch_name || 'Head Office'})
                     </p>
                 </div>
                 <Link to="/appointments" className="btn btn-primary">

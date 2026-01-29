@@ -16,27 +16,26 @@ export function AuthProvider({ children }) {
                 try {
                     const response = await authAPI.getMe();
                     setUser(response.data);
-                    
+
                     // Load branches
                     try {
-                        const branchesResponse = await branchesAPI.getAll({ active_only: true });
-                        setBranches(branchesResponse.data);
-                        
+                        const branchesList = await fetchBranches();
+
                         // Set selected branch from localStorage or user's branch
                         const savedBranchId = localStorage.getItem('selectedBranchId');
                         if (savedBranchId) {
-                            const branch = branchesResponse.data.find(b => b.branch_id === parseInt(savedBranchId));
+                            const branch = branchesList.find(b => b.branch_id === parseInt(savedBranchId));
                             if (branch) {
                                 setSelectedBranch(branch);
                             } else if (response.data.branch_id) {
-                                const userBranch = branchesResponse.data.find(b => b.branch_id === response.data.branch_id);
+                                const userBranch = branchesList.find(b => b.branch_id === response.data.branch_id);
                                 if (userBranch) {
                                     setSelectedBranch(userBranch);
                                     localStorage.setItem('selectedBranchId', userBranch.branch_id);
                                 }
                             }
                         } else if (response.data.branch_id) {
-                            const userBranch = branchesResponse.data.find(b => b.branch_id === response.data.branch_id);
+                            const userBranch = branchesList.find(b => b.branch_id === response.data.branch_id);
                             if (userBranch) {
                                 setSelectedBranch(userBranch);
                                 localStorage.setItem('selectedBranchId', userBranch.branch_id);
@@ -93,6 +92,20 @@ export function AuthProvider({ children }) {
     const isManager = () => user?.role === 'manager' || user?.role === 'admin';
     const isAuthenticated = () => !!token && !!user;
 
+    const fetchBranches = async () => {
+        try {
+            // Fetch all branches (admins need to see them all)
+            const response = await branchesAPI.getAll({ active_only: false });
+            setBranches(response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error loading branches:', error);
+            return [];
+        }
+    };
+
+    const refreshBranches = fetchBranches;
+
     const value = {
         user,
         token,
@@ -106,12 +119,13 @@ export function AuthProvider({ children }) {
         selectedBranch,
         branches,
         selectBranch,
+        refreshBranches,
     };
 
     return (
-        <AuthContext.Provider value={value}>
+        <AuthContext.Provider value={value} >
             {children}
-        </AuthContext.Provider>
+        </AuthContext.Provider >
     );
 }
 

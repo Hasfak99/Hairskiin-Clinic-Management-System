@@ -16,7 +16,7 @@ import { analyticsAPI, appointmentsAPI, productsAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
-export default function DirectorDashboard() {
+export default function HairSkinDirectorDashboard() {
     const [stats, setStats] = useState(null);
     const [todayAppointments, setTodayAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -117,7 +117,7 @@ export default function DirectorDashboard() {
             <div className="page-header">
                 <div>
                     <h1 className="page-title">
-                        Director Dashboard
+                        Hair Skin Clinic Director Dashboard
                     </h1>
                     <p className="page-subtitle">
                         Global Operations Overview | {user?.full_name || 'Director'}
@@ -154,9 +154,9 @@ export default function DirectorDashboard() {
             </div>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-2" style={{ gap: 'var(--spacing-6)' }}>
-                {/* Net Profit Summary - Prominent for Director */}
-                <div className="card" style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)', color: 'white', border: 'none' }}>
+            <div className="grid grid-cols-3" style={{ gap: 'var(--spacing-6)' }}>
+                {/* Net Profit Summary - Prominent for Director - Spans 2 cols */}
+                <div className="card col-span-2" style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #000000 100%)', color: 'white', border: 'none' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--spacing-6)' }}>
                         <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600 }}>Financial Performance</h3>
                         <Banknote size={24} style={{ opacity: 0.5 }} />
@@ -164,24 +164,24 @@ export default function DirectorDashboard() {
 
                     <div style={{ marginBottom: 'var(--spacing-6)' }}>
                         <p style={{ fontSize: 'var(--font-size-sm)', color: '#999', marginBottom: 'var(--spacing-1)' }}>Total Net Profit (Month)</p>
-                        <p style={{ fontSize: '36px', fontWeight: 700, color: '#fbbf24' }}>
+                        <p style={{ fontSize: '42px', fontWeight: 700, color: '#fbbf24' }}>
                             {formatCurrency(stats?.net_profit || 0)}
                         </p>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-4)', borderTop: '1px solid #333', paddingTop: 'var(--spacing-4)' }}>
                         <div>
-                            <p style={{ fontSize: 'var(--font-size-sm)', color: '#999' }}>Projected</p>
-                            <p style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600 }}>{formatCurrency((stats?.net_profit || 0) * 1.15)}</p>
+                            <p style={{ fontSize: 'var(--font-size-sm)', color: '#999' }}>Projected Revenue</p>
+                            <p style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600 }}>{formatCurrency((stats?.total_revenue || 0) * 1.15)}</p>
                         </div>
                         <div>
-                            <p style={{ fontSize: 'var(--font-size-sm)', color: '#999' }}>Growth</p>
+                            <p style={{ fontSize: 'var(--font-size-sm)', color: '#999' }}>Growth Projection</p>
                             <p style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: '#4ade80' }}>+15%</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Quick Actions */}
+                {/* Quick Actions - 1 col */}
                 <div className="card">
                     <h3 style={{
                         fontSize: 'var(--font-size-lg)',
@@ -191,26 +191,26 @@ export default function DirectorDashboard() {
                         Quick Actions
                     </h3>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--spacing-4)' }}>
-                        <Link to="/users" className="btn btn-secondary btn-lg" style={{ flexDirection: 'column', height: 100, gap: 'var(--spacing-2)' }}>
-                            <Users size={24} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
+                        <Link to="/users" className="btn btn-secondary btn-lg" style={{ justifyContent: 'flex-start', gap: 'var(--spacing-3)' }}>
+                            <Users size={20} />
                             <span>Manage Staff</span>
                         </Link>
-                        <Link to="/analytics" className="btn btn-secondary btn-lg" style={{ flexDirection: 'column', height: 100, gap: 'var(--spacing-2)' }}>
-                            <TrendingUp size={24} />
+                        <Link to="/analytics" className="btn btn-secondary btn-lg" style={{ justifyContent: 'flex-start', gap: 'var(--spacing-3)' }}>
+                            <TrendingUp size={20} />
                             <span>Full Analytics</span>
                         </Link>
-                        <Link to="/products" className="btn btn-secondary btn-lg" style={{ flexDirection: 'column', height: 100, gap: 'var(--spacing-2)' }}>
-                            <Package size={24} />
+                        <Link to="/products" className="btn btn-secondary btn-lg" style={{ justifyContent: 'flex-start', gap: 'var(--spacing-3)' }}>
+                            <Package size={20} />
                             <span>Inventory</span>
                         </Link>
                         <button
                             className="btn btn-secondary btn-lg"
-                            style={{ flexDirection: 'column', height: 100, gap: 'var(--spacing-2)' }}
+                            style={{ justifyContent: 'flex-start', gap: 'var(--spacing-3)' }}
                             onClick={handleLowStockNotify}
                         >
-                            <Mail size={24} />
-                            <span>Stock Reports</span>
+                            <Mail size={20} />
+                            <span>Email Stock Report</span>
                         </button>
                     </div>
                 </div>
