@@ -6,6 +6,7 @@ import enum
 
 
 class UserRole(str, enum.Enum):
+    super_admin = "super_admin"
     admin = "admin"
     receptionist = "receptionist"
     manager = "manager"
@@ -180,6 +181,7 @@ class Appointment(Base):
     treatment_id = Column(Integer, ForeignKey("treatments.treatment_id"), nullable=False)
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=False, index=True)
     department_id = Column(Integer, ForeignKey("departments.department_id"), nullable=True, index=True)
+    stylist_id = Column(Integer, ForeignKey("users.user_id"), nullable=True, index=True)
     appointment_date = Column(Date, nullable=False, index=True)
     appointment_time = Column(Time, nullable=False)
     status = Column(String(20), default=AppointmentStatus.booked.value)
@@ -199,6 +201,7 @@ class Appointment(Base):
     client = relationship("Client", back_populates="appointments")
     department = relationship("Department", back_populates="appointments")
     treatment = relationship("Treatment", back_populates="appointments")
+    stylist = relationship("User", foreign_keys=[stylist_id])
     bill = relationship("Bill", back_populates="appointment", uselist=False)
 
 
@@ -211,6 +214,7 @@ class Bill(Base):
     appointment_id = Column(Integer, ForeignKey("appointments.appointment_id"), nullable=True)
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=False, index=True)
     department_id = Column(Integer, ForeignKey("departments.department_id"), nullable=True, index=True)
+    stylist_id = Column(Integer, ForeignKey("users.user_id"), nullable=True, index=True)
     total_amount = Column(Float, default=0.0)
     discount = Column(Float, default=0.0)
     tax = Column(Float, default=0.0)
@@ -227,6 +231,7 @@ class Bill(Base):
     department = relationship("Department", back_populates="bills", foreign_keys=[department_id])
     client = relationship("Client", back_populates="bills")
     appointment = relationship("Appointment", back_populates="bill")
+    stylist = relationship("User", foreign_keys=[stylist_id])
     details = relationship("BillDetail", back_populates="bill", cascade="all, delete-orphan")
 
 

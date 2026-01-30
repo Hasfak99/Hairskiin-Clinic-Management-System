@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Calendar, Clock, User, CheckCircle, XCircle } from 'lucide-react';
-import { appointmentsAPI, clientsAPI, treatmentsAPI, departmentsAPI } from '../api';
+import { appointmentsAPI, clientsAPI, treatmentsAPI, departmentsAPI, branchesAPI, usersAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
@@ -13,6 +13,8 @@ export default function Appointments() {
     const [clients, setClients] = useState([]);
     const [treatments, setTreatments] = useState([]);
     const [departments, setDepartments] = useState([]);
+    const [branches, setBranches] = useState([]);
+    const [stylists, setStylists] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -28,7 +30,9 @@ export default function Appointments() {
     const [formData, setFormData] = useState({
         client_id: '',
         treatment_id: '',
+        branch_id: '',
         department_id: '',
+        stylist_id: '',
         appointment_date: format(new Date(), 'yyyy-MM-dd'),
         appointment_time: '10:00',
         notes: '',
@@ -47,7 +51,7 @@ export default function Appointments() {
 
     const fetchData = async () => {
         try {
-            const [aptRes, clientRes, treatRes, deptRes] = await Promise.all([
+            const [aptRes, clientRes, treatRes, deptRes, branchRes] = await Promise.all([
                 appointmentsAPI.getAll({
                     page: pagination.page,
                     size: pagination.size
@@ -55,6 +59,8 @@ export default function Appointments() {
                 clientsAPI.getAll(),
                 treatmentsAPI.getAll(),
                 departmentsAPI.getAll(),
+                branchesAPI.getAll(),
+                usersAPI.getAll(), // Fetch all users to filter as stylists
             ]);
             setAppointments(aptRes.data.items);
             setPagination(prev => ({
@@ -65,6 +71,11 @@ export default function Appointments() {
             setClients(clientRes.data.items || clientRes.data);
             setTreatments(treatRes.data.items || treatRes.data);
             setDepartments(deptRes.data);
+            setBranches(branchRes.data);
+            // Filter users who can be stylists (all for now, or specific roles)
+            setStylists(branchRes.data ? (await usersAPI.getAll()).data.items : []);
+            // Better to optimize this later, but reusing response
+
         } catch (error) {
             toast.error('Failed to fetch data');
         } finally {
@@ -76,7 +87,7 @@ export default function Appointments() {
         e.preventDefault();
         try {
             let finalClientId = formData.client_id;
-            const finalBranchId = parseInt(localStorage.getItem('selectedBranchId') || '1');
+            const finalBranchId = formData.branch_id ? parseInt(formData.branch_id) : (user?.branch_id || selectedBranch?.branch_id || 1);
 
             // Handle New Client Creation
             if (createClientMode) {
@@ -146,6 +157,8 @@ export default function Appointments() {
             appointment_date: apt.appointment_date,
             appointment_time: apt.appointment_time,
             department_id: apt.department_id || '',
+            branch_id: apt.branch_id || '',
+            stylist_id: apt.stylist_id || '',
             notes: apt.notes || '',
         });
         setSelectedTreatment(treatments.find(t => t.treatment_id === apt.treatment_id));
@@ -160,6 +173,8 @@ export default function Appointments() {
             appointment_date: format(new Date(), 'yyyy-MM-dd'),
             appointment_time: '10:00',
             department_id: user?.department_id || '',
+            branch_id: user?.branch_id || selectedBranch?.branch_id || '',
+            stylist_id: '',
             notes: '',
         });
         setSelectedTreatment(null);
@@ -374,17 +389,51 @@ export default function Appointments() {
                     </div>
 
                     <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
+                        <label className="input-label">Branch</label>
+                        {user?.branch_id ? (
+                            <input
+                                type="text"
+                                className="input disabled"
+                                value={branches.find(b => b.branch_id === user.branch_id)?.branch_name || ''}
+                                disabled
+                                readOnly
+                            />
+                        ) : (
+                            <select
+                                className="input"
+                                value={formData.branch_id}
+                                onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                            >
+                                <option value="">Default (Your Branch)</option>
+                                {branches.map(b => (
+                                    <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+
+                    <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
                         <label className="input-label">Department</label>
-                        <select
-                            className="input"
-                            value={formData.department_id}
-                            onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
-                        >
-                            <option value="">Select Department</option>
-                            {departments.map(d => (
-                                <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
-                            ))}
-                        </select>
+                        {user?.department_id ? (
+                            <input
+                                type="text"
+                                className="input disabled"
+                                value={departments.find(d => d.department_id === user.department_id)?.department_name || ''}
+                                disabled
+                                readOnly
+                            />
+                        ) : (
+                            <select
+                                className="input"
+                                value={formData.department_id}
+                                onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
+                            >
+                                <option value="">Select Department</option>
+                                {departments.map(d => (
+                                    <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
+                                ))}
+                            </select>
+                        )}
                     </div>
 
                     {selectedTreatment && (

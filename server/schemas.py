@@ -17,6 +17,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
 # ==================== ENUMS ====================
 class UserRole(str, Enum):
+    super_admin = "super_admin"
     admin = "admin"
     receptionist = "receptionist"
     manager = "manager"
@@ -303,6 +304,7 @@ class AppointmentBase(BaseModel):
     guest_phone: Optional[str] = None  # NEW
     payment_status: Optional[str] = "pending"  # NEW
     branch_id: int
+    stylist_id: Optional[int] = None  # NEW
 
 
 class AppointmentCreate(AppointmentBase):
@@ -327,7 +329,8 @@ class AppointmentUpdate(BaseModel):
     status: Optional[AppointmentStatus] = None
     payment_status: Optional[str] = None  # NEW
     notes: Optional[str] = None
-    department_id: Optional[int] = None  # NEW
+    department_id: Optional[int] = None
+    stylist_id: Optional[int] = None  # NEW  # NEW
 
 
 class AppointmentResponse(AppointmentBase):
@@ -339,7 +342,8 @@ class AppointmentResponse(AppointmentBase):
     client_name: Optional[str] = None
     treatment_name: Optional[str] = None
     treatment_price: Optional[float] = None
-    department_name: Optional[str] = None  # NEW
+    department_name: Optional[str] = None
+    stylist_name: Optional[str] = None  # NEW  # NEW
 
     class Config:
         from_attributes = True
@@ -376,6 +380,7 @@ class BillBase(BaseModel):
     notes: Optional[str] = None
     branch_id: int
     department_id: Optional[int] = None  # NEW
+    stylist_id: Optional[int] = None
 
 
 class BillCreate(BillBase):

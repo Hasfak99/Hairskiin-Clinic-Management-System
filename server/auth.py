@@ -151,6 +151,7 @@ def require_role(*roles: str):
 
 
 # Role-based dependencies
-require_admin = require_role("admin")
-require_admin_or_manager = require_role("admin", "manager", "director")
-require_any_role = require_role("admin", "manager", "receptionist", "director", "cashier")
+# Role-based dependencies
+require_admin = require_role("admin", "super_admin")
+require_admin_or_manager = require_role("admin", "manager", "director", "super_admin")
+require_any_role = require_role("admin", "manager", "receptionist", "director", "cashier", "super_admin")

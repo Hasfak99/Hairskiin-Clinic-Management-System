@@ -33,7 +33,7 @@ export default function Users() {
 
     useEffect(() => {
         // Only fetch if user is admin
-        if (currentUser && currentUser.role === 'admin') {
+        if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin')) {
             fetchUsers();
             fetchDepartments();
         } else {
@@ -193,6 +193,24 @@ export default function Users() {
             ),
         },
         {
+            key: 'branch_name',
+            label: 'Branch',
+            render: (val, row) => (
+                <span>
+                    {branches.find(b => b.branch_id === row.branch_id)?.branch_name || '-'}
+                </span>
+            ),
+        },
+        {
+            key: 'department_name',
+            label: 'Department',
+            render: (val, row) => (
+                <span>
+                    {departments.find(d => d.department_id === row.department_id)?.department_name || '-'}
+                </span>
+            ),
+        },
+        {
             key: 'status',
             label: 'Status',
             render: (val) => (
@@ -209,7 +227,7 @@ export default function Users() {
     ];
 
     // Check if user is admin using direct role check
-    const userIsAdmin = currentUser?.role === 'admin';
+    const userIsAdmin = isAdmin();
 
     if (!userIsAdmin) {
         return (
@@ -337,6 +355,7 @@ export default function Users() {
                             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                             required
                         >
+                            <option value="super_admin">Super Admin</option>
                             <option value="receptionist">Receptionist</option>
                             <option value="manager">Manager</option>
                             <option value="admin">Admin</option>

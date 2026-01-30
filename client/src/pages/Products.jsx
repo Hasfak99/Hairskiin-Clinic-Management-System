@@ -85,8 +85,8 @@ export default function Products() {
                 price: parseFloat(formData.price),
                 stock_qty: parseInt(formData.stock_qty),
                 min_stock: parseInt(formData.min_stock),
-                branch_id: formData.branch_id ? parseInt(formData.branch_id) : (user?.branch_id || null),
-                department_id: formData.department_id ? parseInt(formData.department_id) : null,
+                branch_id: formData.branch_id ? parseInt(formData.branch_id) : (user?.branch_id || selectedBranch?.branch_id || null),
+                department_id: formData.department_id ? parseInt(formData.department_id) : (user?.department_id || null),
             };
             if (selectedProduct) {
                 await productsAPI.update(selectedProduct.product_id, data);
@@ -138,8 +138,8 @@ export default function Products() {
             stock_qty: '',
             min_stock: '5',
             category: '',
-            branch_id: user?.role === 'admin' ? '' : (user?.branch_id || ''),
-            department_id: ''
+            branch_id: user?.branch_id || selectedBranch?.branch_id || '',
+            department_id: user?.department_id || ''
         });
     };
 
@@ -302,10 +302,18 @@ export default function Products() {
                         />
                     </div>
 
-                    {/* Branch (Admin Only) */}
-                    {user?.role === 'admin' && (
-                        <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
-                            <label className="input-label">Branch</label>
+                    {/* Branch Selection */}
+                    <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
+                        <label className="input-label">Branch</label>
+                        {user?.branch_id ? (
+                            <input
+                                type="text"
+                                className="input disabled"
+                                value={branches.find(b => b.branch_id === user.branch_id)?.branch_name || ''}
+                                disabled
+                                readOnly
+                            />
+                        ) : (
                             <select
                                 className="input"
                                 value={formData.branch_id}
@@ -316,22 +324,32 @@ export default function Products() {
                                     <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
                                 ))}
                             </select>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     {/* Department Selection */}
                     <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
                         <label className="input-label">Department</label>
-                        <select
-                            className="input"
-                            value={formData.department_id}
-                            onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
-                        >
-                            <option value="">Select Department</option>
-                            {departments.map(d => (
-                                <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
-                            ))}
-                        </select>
+                        {user?.department_id ? (
+                            <input
+                                type="text"
+                                className="input disabled"
+                                value={departments.find(d => d.department_id === user.department_id)?.department_name || ''}
+                                disabled
+                                readOnly
+                            />
+                        ) : (
+                            <select
+                                className="input"
+                                value={formData.department_id}
+                                onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
+                            >
+                                <option value="">Select Department</option>
+                                {departments.map(d => (
+                                    <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
+                                ))}
+                            </select>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2" style={{ gap: 'var(--spacing-4)', marginBottom: 'var(--spacing-4)' }}>

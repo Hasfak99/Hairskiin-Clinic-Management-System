@@ -17,7 +17,9 @@ import Billing from './pages/Billing';
 import Analytics from './pages/Analytics';
 import Users from './pages/Users';
 import Branches from './pages/Branches';
+
 import Departments from './pages/Departments';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 
 // Protected Route wrapper
 function ProtectedRoute({ children }) {
@@ -122,6 +124,14 @@ function App() {
                 <ProtectedRoute>
                     <MainLayout>
                         <Analytics />
+                    </MainLayout>
+                </ProtectedRoute>
+            } />
+
+            <Route path="/super-admin" element={
+                <ProtectedRoute>
+                    <MainLayout>
+                        <SuperAdminDashboard />
                     </MainLayout>
                 </ProtectedRoute>
             } />

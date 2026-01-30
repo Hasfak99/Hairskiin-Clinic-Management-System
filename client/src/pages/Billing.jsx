@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Printer, Receipt, Search, Trash2, QrCode } from 'lucide-react';
-import { billsAPI, clientsAPI, treatmentsAPI, productsAPI, branchesAPI, departmentsAPI } from '../api';
+import { billsAPI, clientsAPI, treatmentsAPI, productsAPI, branchesAPI, departmentsAPI, usersAPI } from '../api';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import toast from 'react-hot-toast';
@@ -19,13 +19,14 @@ export default function Billing() {
     const [products, setProducts] = useState([]);
     const [branches, setBranches] = useState([]);
     const [departments, setDepartments] = useState([]);
+    const [stylists, setStylists] = useState([]); // NEW
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedBill, setSelectedBill] = useState(null);
     const [cashReceived, setCashReceived] = useState(0);
     const [printType, setPrintType] = useState('thermal'); // 'thermal' or 'professional'
-    const { selectedBranch } = useAuth();
+    const { user, selectedBranch } = useAuth();
     const [pagination, setPagination] = useState({
         page: 1,
         size: 20,
@@ -37,6 +38,7 @@ export default function Billing() {
         client_id: '',
         branch_id: '',
         department_id: '',
+        stylist_id: '', // NEW
         items: [],
         discount: 0,
         tax: 0,
@@ -76,7 +78,7 @@ export default function Billing() {
 
     const fetchData = async () => {
         try {
-            const [billRes, clientRes, treatRes, prodRes] = await Promise.all([
+            const [billRes, clientRes, treatRes, prodRes, userRes] = await Promise.all([
                 billsAPI.getAll({
                     page: pagination.page,
                     size: pagination.size
@@ -84,6 +86,7 @@ export default function Billing() {
                 clientsAPI.getAll(),
                 treatmentsAPI.getAll(),
                 productsAPI.getAll(),
+                usersAPI.getAll(), // NEW
             ]);
             setBills(billRes.data.items);
             setPagination(prev => ({
@@ -94,6 +97,7 @@ export default function Billing() {
             setClients(clientRes.data.items || clientRes.data);
             setTreatments(treatRes.data.items || treatRes.data);
             setProducts(prodRes.data.items || prodRes.data);
+            setStylists(userRes.data.items || userRes.data); // NEW
         } catch (error) {
             toast.error('Failed to fetch data');
         } finally {
@@ -180,7 +184,8 @@ export default function Billing() {
                 ...formData,
                 client_id: finalClientId,
                 branch_id: finalBranchId,
-                department_id: finalDeptId
+                department_id: finalDeptId,
+                stylist_id: formData.stylist_id || null, // NEW
             };
 
             const response = await billsAPI.create(payload);
@@ -219,7 +224,8 @@ export default function Billing() {
         setFormData({
             client_id: '',
             branch_id: selectedBranch?.branch_id || '',
-            department_id: '',
+            department_id: user?.department_id || '',
+            stylist_id: '', // NEW
             items: [],
             discount: 0,
             tax: 0,
@@ -251,6 +257,7 @@ export default function Billing() {
             label: 'Department',
             render: (val) => val || '-'
         },
+        // REMOVED Stylist column
         {
             key: 'final_amount',
             label: 'Amount',
@@ -340,31 +347,55 @@ export default function Billing() {
                     <div className="grid grid-cols-2" style={{ gap: 'var(--spacing-4)', marginBottom: 'var(--spacing-4)' }}>
                         <div className="input-group">
                             <label className="input-label">Branch</label>
-                            <select
-                                className="input"
-                                value={formData.branch_id}
-                                onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
-                            >
-                                <option value="">Default (Your Branch)</option>
-                                {branches.map(b => (
-                                    <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
-                                ))}
-                            </select>
+                            {user?.branch_id ? (
+                                <input
+                                    type="text"
+                                    className="input disabled"
+                                    value={branches.find(b => b.branch_id === user.branch_id)?.branch_name || ''}
+                                    disabled
+                                    readOnly
+                                />
+                            ) : (
+                                <select
+                                    className="input"
+                                    value={formData.branch_id}
+                                    onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                                >
+                                    <option value="">Default (Your Branch)</option>
+                                    {branches.map(b => (
+                                        <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
                         <div className="input-group">
                             <label className="input-label">Department</label>
-                            <select
-                                className="input"
-                                value={formData.department_id}
-                                onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
-                            >
-                                <option value="">Select Department</option>
-                                {departments.map(d => (
-                                    <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
-                                ))}
-                            </select>
+                            {user?.department_id ? (
+                                <input
+                                    type="text"
+                                    className="input disabled"
+                                    value={departments.find(d => d.department_id === user.department_id)?.department_name || ''}
+                                    disabled
+                                    readOnly
+                                />
+                            ) : (
+                                <select
+                                    className="input"
+                                    value={formData.department_id}
+                                    onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
+                                >
+                                    <option value="">Select Department</option>
+                                    {departments.map(d => (
+                                        <option key={d.department_id} value={d.department_id}>{d.department_name}</option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
                     </div>
+
+
+
+
 
                     <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-2)' }}>
@@ -754,6 +785,6 @@ export default function Billing() {
                     </>
                 )
             }
-        </div>
+        </div >
     );
 }
