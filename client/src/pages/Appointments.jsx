@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Calendar, Clock, User, CheckCircle, XCircle } from 'lucide-react';
 import { appointmentsAPI, clientsAPI, treatmentsAPI, departmentsAPI } from '../api';
+import { useAuth } from '../context/AuthContext';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
+import SearchableSelect from '../components/SearchableSelect';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -14,6 +16,15 @@ export default function Appointments() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
+    const { user, selectedBranch } = useAuth();
+
+    // Quick Client Creation State
+    const [createClientMode, setCreateClientMode] = useState(false);
+    const [newClientData, setNewClientData] = useState({
+        name: '',
+        phone: '',
+    });
+
     const [formData, setFormData] = useState({
         client_id: '',
         treatment_id: '',
@@ -64,9 +75,30 @@ export default function Appointments() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            let finalClientId = formData.client_id;
+            const finalBranchId = parseInt(localStorage.getItem('selectedBranchId') || '1');
+
+            // Handle New Client Creation
+            if (createClientMode) {
+                if (!newClientData.name || !newClientData.phone) {
+                    toast.error('Please enter Name and Phone for new client');
+                    return;
+                }
+                const clientRes = await clientsAPI.create({
+                    name: newClientData.name,
+                    phone: newClientData.phone,
+                    branch_id: finalBranchId
+                });
+                finalClientId = clientRes.data.client_id;
+            } else if (!finalClientId) {
+                toast.error('Please select a client');
+                return;
+            }
+
             const payload = {
                 ...formData,
-                branch_id: parseInt(localStorage.getItem('selectedBranchId') || '1'),
+                client_id: finalClientId,
+                branch_id: finalBranchId,
             };
 
             if (selectedAppointment) {
@@ -80,6 +112,7 @@ export default function Appointments() {
             resetForm();
             fetchData();
         } catch (error) {
+            console.error(error);
             toast.error(error.response?.data?.detail || 'Operation failed');
         }
     };
@@ -126,10 +159,12 @@ export default function Appointments() {
             treatment_id: '',
             appointment_date: format(new Date(), 'yyyy-MM-dd'),
             appointment_time: '10:00',
-            department_id: '',
+            department_id: user?.department_id || '',
             notes: '',
         });
         setSelectedTreatment(null);
+        setCreateClientMode(false);
+        setNewClientData({ name: '', phone: '' });
     };
 
     const handleTreatmentChange = (treatmentId) => {
@@ -276,37 +311,66 @@ export default function Appointments() {
             >
                 <form onSubmit={handleSubmit}>
                     <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
-                        <label className="input-label">Client *</label>
-                        <select
-                            className="input"
-                            value={formData.client_id}
-                            onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-                            required
-                        >
-                            <option value="">Select Client</option>
-                            {clients.map(c => (
-                                <option key={c.client_id} value={c.client_id}>
-                                    {c.name} ({c.phone})
-                                </option>
-                            ))}
-                        </select>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-2)' }}>
+                            <label className="input-label" style={{ marginBottom: 0 }}>Client *</label>
+                            <button
+                                type="button"
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => setCreateClientMode(!createClientMode)}
+                                style={{ color: 'var(--primary-600)', fontWeight: 500 }}
+                            >
+                                {createClientMode ? 'Select Existing Client' : 'New Client ?'}
+                            </button>
+                        </div>
+
+                        {!createClientMode ? (
+                            <SearchableSelect
+                                label=""
+                                placeholder="Select Client"
+                                options={clients.map(c => ({
+                                    value: c.client_id,
+                                    label: `${c.name} (${c.phone})`
+                                }))}
+                                value={formData.client_id}
+                                onChange={(val) => setFormData({ ...formData, client_id: val })}
+                                required={!createClientMode}
+                            />
+                        ) : (
+                            <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder="Client Name"
+                                    value={newClientData.name}
+                                    onChange={(e) => setNewClientData({ ...newClientData, name: e.target.value })}
+                                    style={{ flex: 1 }}
+                                    required={createClientMode}
+                                />
+                                <input
+                                    type="tel"
+                                    className="input"
+                                    placeholder="Phone Number"
+                                    value={newClientData.phone}
+                                    onChange={(e) => setNewClientData({ ...newClientData, phone: e.target.value })}
+                                    style={{ flex: 1 }}
+                                    required={createClientMode}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
-                        <label className="input-label">Treatment *</label>
-                        <select
-                            className="input"
+                        <SearchableSelect
+                            label="Treatment *"
+                            placeholder="Select Treatment"
+                            options={treatments.map(t => ({
+                                value: t.treatment_id,
+                                label: `${t.treatment_name} - LKR ${t.price}`
+                            }))}
                             value={formData.treatment_id}
-                            onChange={(e) => handleTreatmentChange(e.target.value)}
+                            onChange={handleTreatmentChange}
                             required
-                        >
-                            <option value="">Select Treatment</option>
-                            {treatments.map(t => (
-                                <option key={t.treatment_id} value={t.treatment_id}>
-                                    {t.treatment_name} - LKR {t.price}
-                                </option>
-                            ))}
-                        </select>
+                        />
                     </div>
 
                     <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
