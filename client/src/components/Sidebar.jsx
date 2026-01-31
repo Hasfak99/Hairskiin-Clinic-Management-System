@@ -92,18 +92,16 @@ export default function Sidebar() {
                     gap: 'var(--spacing-3)',
                     minHeight: 'var(--header-height)',
                 }}>
-                    <div style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 'var(--radius-lg)',
-                        background: 'var(--gradient-primary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                    }}>
-                        <Sparkles size={22} color="white" />
-                    </div>
+                    <img
+                        src="/HS_1.png"
+                        alt="Hairskiin Logo"
+                        style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 'var(--radius-lg)',
+                            objectFit: 'contain'
+                        }}
+                    />
                     {!collapsed && (
                         <div>
                             <h1 style={{

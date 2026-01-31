@@ -4,7 +4,7 @@ from typing import List, Optional
 from database import get_db
 import models
 import schemas
-from auth import require_admin, require_admin_or_manager
+from auth import require_admin, require_admin_or_manager, require_any_role
 
 router = APIRouter(prefix="/branches", tags=["Branches"])
 
@@ -15,7 +15,7 @@ async def get_branches(
     limit: int = 100,
     active_only: bool = Query(False, description="Filter only active branches"),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_admin_or_manager)
+    current_user: models.User = Depends(require_any_role)
 ):
     """Get all branches"""
     query = db.query(models.Branch)

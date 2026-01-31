@@ -56,18 +56,16 @@ export default function Login() {
             }}>
                 {/* Logo */}
                 <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-8)' }}>
-                    <div style={{
-                        width: 64,
-                        height: 64,
-                        margin: '0 auto var(--spacing-4)',
-                        borderRadius: 'var(--radius-xl)',
-                        background: '#000000',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}>
-                        <Sparkles size={32} color="white" />
-                    </div>
+                    <img
+                        src="/HS_1.png"
+                        alt="Hairskiin Logo"
+                        style={{
+                            width: 80,
+                            height: 80,
+                            margin: '0 auto var(--spacing-4)',
+                            objectFit: 'contain'
+                        }}
+                    />
                     <h1 style={{
                         fontSize: 'var(--font-size-2xl)',
                         fontWeight: 700,

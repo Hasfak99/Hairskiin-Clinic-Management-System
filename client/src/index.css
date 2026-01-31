@@ -977,23 +977,49 @@ textarea.input {
     padding: 0;
   }
 
+  /* Named pages for different print sizes */
+  @page thermal {
+    size: 89mm 78mm;
+    margin: 0;
+  }
+
+  @page professional {
+    size: A4;
+    margin: 0;
+  }
+
   /* Thermal specific override */
   .print-active .thermal-receipt {
-    width: 58mm;
+    page: thermal;
+    /* Apply specific page size */
+    width: 89mm;
+    height: 78mm;
     padding: 2mm;
     font-size: 11px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+  .print-active .thermal-receipt table {
+    width: 100%;
+  }
+
+  .print-active .thermal-receipt .payment-qr {
     margin: 0 auto;
   }
 
   /* Professional Bill specific override for print - A4 Optimization */
   .print-active .professional-bill {
+    page: professional;
+    /* Apply A4 size */
     max-width: none;
     width: 210mm;
-    /* A4 width */
     min-height: 297mm;
-    /* A4 height */
     padding: 15mm 20mm;
-    /* A4 standard margins */
     margin: 0 auto;
     box-shadow: none;
     border: none;
@@ -1001,7 +1027,6 @@ textarea.input {
   }
 
   .print-active .professional-bill .bill-logo {
-    /* Optimize logo size for print if needed */
     max-width: 150px;
   }
 
@@ -1014,6 +1039,7 @@ textarea.input {
     display: none !important;
   }
 
+  /* Fallback default page */
   @page {
     size: auto;
     margin: 0;

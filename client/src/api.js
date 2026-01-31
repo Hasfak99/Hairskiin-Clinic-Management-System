@@ -155,6 +155,7 @@ export const appointmentsAPI = {
     update: (id, data) => api.put(`/appointments/${id}`, data),
     updateStatus: (id, status) => api.patch(`/appointments/${id}/status`, null, { params: { status } }),
     cancel: (id) => api.delete(`/appointments/${id}`),
+    deletePermanently: (id) => api.delete(`/appointments/${id}/hard`),
 };
 
 // ==================== BILLS ====================

@@ -18,7 +18,7 @@ export default function Appointments() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
-    const { user, selectedBranch } = useAuth();
+    const { user, selectedBranch, isAdmin } = useAuth();
 
     // Quick Client Creation State
     const [createClientMode, setCreateClientMode] = useState(false);
@@ -110,6 +110,10 @@ export default function Appointments() {
                 ...formData,
                 client_id: finalClientId,
                 branch_id: finalBranchId,
+                // Ensure IDs are integers or null, checking for both empty string and 0 if valid (though IDs usually > 0)
+                treatment_id: formData.treatment_id ? parseInt(formData.treatment_id) : null,
+                department_id: formData.department_id ? parseInt(formData.department_id) : null,
+                stylist_id: formData.stylist_id ? parseInt(formData.stylist_id) : null,
             };
 
             if (selectedAppointment) {
@@ -124,7 +128,12 @@ export default function Appointments() {
             fetchData();
         } catch (error) {
             console.error(error);
-            toast.error(error.response?.data?.detail || 'Operation failed');
+            const detail = error.response?.data?.detail;
+            if (typeof detail === 'object') {
+                toast.error(JSON.stringify(detail));
+            } else {
+                toast.error(detail || 'Operation failed');
+            }
         }
     };
 
@@ -146,6 +155,17 @@ export default function Appointments() {
             fetchData();
         } catch (error) {
             toast.error('Failed to cancel');
+        }
+    };
+
+    const handleHardDelete = async (apt) => {
+        if (!confirm('PERMANENTLY DELETE this appointment? This cannot be undone.')) return;
+        try {
+            await appointmentsAPI.deletePermanently(apt.appointment_id);
+            toast.success('Appointment deleted permanently');
+            fetchData();
+        } catch (error) {
+            toast.error('Failed to delete');
         }
     };
 
@@ -305,6 +325,16 @@ export default function Appointments() {
                         >
                             <XCircle size={16} />
                         </button>
+                        {isAdmin() && (
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => handleHardDelete(row)}
+                                title="Delete Permanently"
+                                style={{ color: '#991b1b' }}
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        )}
                     </div>
                 )}
             />

@@ -9,7 +9,7 @@ import uuid
 from database import get_db
 import models
 import schemas
-from auth import require_any_role
+from auth import require_any_role, require_admin
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
 
@@ -294,6 +294,22 @@ async def cancel_appointment(
         raise HTTPException(status_code=404, detail="Appointment not found")
     
     db_apt.status = "cancelled"
+    db.commit()
+    return None
+
+
+@router.delete("/{appointment_id}/hard", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_appointment_permanently(
+    appointment_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_admin)
+):
+    """Permanently delete appointment (Admin only)"""
+    db_apt = db.query(models.Appointment).filter(models.Appointment.appointment_id == appointment_id).first()
+    if not db_apt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    db.delete(db_apt)
     db.commit()
     return None
 

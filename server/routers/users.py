@@ -6,7 +6,7 @@ import math
 from database import get_db
 import models
 import schemas
-from auth import get_password_hash, require_admin, get_current_user
+from auth import get_password_hash, require_admin, get_current_user, require_any_role
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -18,7 +18,7 @@ async def get_users(
     size: int = 20,
     branch_id: Optional[int] = Query(None, description="Filter by branch"),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_admin)
+    current_user: models.User = Depends(require_any_role)
 ):
     """Get all users (Admin only) with pagination"""
     query = db.query(models.User)
