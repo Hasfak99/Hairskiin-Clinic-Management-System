@@ -12,6 +12,7 @@ class UserRole(str, enum.Enum):
     manager = "manager"
     cashier = "cashier"
     director = "director"
+    doctor = "doctor"
 
 
 class UserStatus(str, enum.Enum):

@@ -179,6 +179,7 @@ export const analyticsAPI = {
     getAppointmentsTrend: (days = 30) => api.get('/analytics/appointments-trend', { params: { days } }),
     getClientStats: () => api.get('/analytics/client-stats'),
     getPeakHours: () => api.get('/analytics/peak-hours'),
+    getDoctorStats: () => api.get('/analytics/doctor-stats'),
 };
 
 // ==================== GLOBAL SEARCH ====================

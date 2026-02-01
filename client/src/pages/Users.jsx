@@ -150,6 +150,7 @@ export default function Users() {
         receptionist: 'badge-neutral',
         cashier: 'badge-success',
         director: 'badge-primary',
+        doctor: 'badge-secondary',
     };
 
     const columns = [
@@ -361,6 +362,7 @@ export default function Users() {
                             <option value="admin">Admin</option>
                             <option value="cashier">Cashier</option>
                             <option value="director">Director</option>
+                            <option value="doctor">Doctor</option>
                         </select>
                     </div>
 

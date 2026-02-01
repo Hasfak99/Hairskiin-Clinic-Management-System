@@ -23,6 +23,7 @@ class UserRole(str, Enum):
     manager = "manager"
     cashier = "cashier"
     director = "director"
+    doctor = "doctor"
 
 
 class UserStatus(str, Enum):

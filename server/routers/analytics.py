@@ -11,6 +11,66 @@ router = APIRouter(
     tags=["Analytics"]
 )
 
+from datetime import date, datetime, timedelta
+
+@router.get("/doctor-stats")
+def get_doctor_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.doctor and current_user.role != UserRole.super_admin:
+         raise HTTPException(status_code=403, detail="Not authorized")
+
+    today = date.today()
+    
+    # 1. Today's Appointments
+    today_appointments_count = db.query(Appointment).filter(
+        Appointment.stylist_id == current_user.user_id,
+        func.date(Appointment.appointment_date) == today,
+        Appointment.status != 'cancelled'
+    ).count()
+    
+    # 2. Total Patients (Unique clients treated)
+    # distinct client_ids from appointments assigned to this doctor
+    total_patients = db.query(Appointment.client_id).filter(
+        Appointment.stylist_id == current_user.user_id
+    ).distinct().count()
+    
+    # 3. Personal Revenue
+    # Sum of bills where stylist_id is this user
+    my_revenue = db.query(func.sum(Bill.final_amount)).filter(
+        Bill.stylist_id == current_user.user_id,
+        Bill.payment_status == 'paid'
+    ).scalar() or 0.0
+    
+    # 4. Upcoming Appointments (Next 5)
+    upcoming = db.query(Appointment).filter(
+        Appointment.stylist_id == current_user.user_id,
+        Appointment.appointment_date >= today,
+        Appointment.status != 'cancelled'
+    ).order_by(Appointment.appointment_date, Appointment.appointment_time).limit(5).all()
+    
+    # Format upcoming appointments
+    upcoming_list = []
+    for apt in upcoming:
+        client_name = apt.client.name if apt.client else "Unknown"
+        treatment_name = apt.treatment.treatment_name if apt.treatment else "Unknown"
+        upcoming_list.append({
+            "id": apt.appointment_id,
+            "client_name": client_name,
+            "treatment_name": treatment_name,
+            "date": apt.appointment_date,
+            "time": apt.appointment_time,
+            "status": apt.status
+        })
+        
+    return {
+        "today_appointments": today_appointments_count,
+        "total_patients": total_patients,
+        "my_revenue": my_revenue,
+        "upcoming_appointments": upcoming_list
+    }
+
 @router.get("/super-admin", response_model=List[Dict[str, Any]])
 def get_super_admin_dashboard_data(
     db: Session = Depends(get_db),

@@ -1,0 +1,136 @@
+Error processing user 14: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+Traceback (most recent call last):
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 44, in get_users
+    items.append(schemas.UserResponse(**user_dict))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+Global Error in get_users: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+Traceback (most recent call last):
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 49, in get_users
+    raise inner_e
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 44, in get_users
+    items.append(schemas.UserResponse(**user_dict))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+Error processing user 14: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+Traceback (most recent call last):
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 44, in get_users
+    items.append(schemas.UserResponse(**user_dict))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+Global Error in get_users: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+Traceback (most recent call last):
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 49, in get_users
+    raise inner_e
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 44, in get_users
+    items.append(schemas.UserResponse(**user_dict))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+Error processing user 14: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+Traceback (most recent call last):
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 44, in get_users
+    items.append(schemas.UserResponse(**user_dict))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+Global Error in get_users: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+Traceback (most recent call last):
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 49, in get_users
+    raise inner_e
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 44, in get_users
+    items.append(schemas.UserResponse(**user_dict))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+Error processing user 14: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+Traceback (most recent call last):
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 44, in get_users
+    items.append(schemas.UserResponse(**user_dict))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+
+Global Error in get_users: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+Traceback (most recent call last):
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 49, in get_users
+    raise inner_e
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\routers\users.py", line 44, in get_users
+    items.append(schemas.UserResponse(**user_dict))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\hmhas\OneDrive\Desktop\Git\Hairskiin-CRM\server\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for UserResponse
+role
+  Input should be 'super_admin', 'admin', 'receptionist', 'manager', 'cashier', 'director' or 'doctor' [type=enum, input_value='', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/enum
+

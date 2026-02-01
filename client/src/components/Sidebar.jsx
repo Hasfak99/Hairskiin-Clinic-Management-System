@@ -20,10 +20,10 @@ import { useState } from 'react';
 
 const navItems = [
     { path: '/super-admin', icon: Shield, label: 'Super Admin', roles: ['super_admin'] },
-    { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'manager', 'receptionist', 'director', 'cashier'] },
+    { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'manager', 'receptionist', 'director', 'cashier', 'doctor'] },
     { path: '/clients', icon: Users, label: 'Clients', roles: ['admin', 'manager', 'receptionist', 'director', 'cashier', 'super_admin'] },
-    { path: '/appointments', icon: Calendar, label: 'Appointments', roles: ['admin', 'manager', 'receptionist', 'director', 'cashier', 'super_admin'] },
-    { path: '/treatments', icon: Scissors, label: 'Treatments', roles: ['admin', 'manager', 'director', 'super_admin'] },
+    { path: '/appointments', icon: Calendar, label: 'Appointments', roles: ['admin', 'manager', 'receptionist', 'director', 'cashier', 'super_admin', 'doctor'] },
+    { path: '/treatments', icon: Scissors, label: 'Treatments', roles: ['admin', 'manager', 'director', 'super_admin', 'doctor'] },
     { path: '/products', icon: Package, label: 'Products', roles: ['admin', 'manager', 'director', 'super_admin'], departmentRestricted: true },
     { path: '/billing', icon: Receipt, label: 'Billing', roles: ['admin', 'manager', 'receptionist', 'cashier', 'director', 'super_admin'] },
     { path: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'manager', 'director', 'super_admin'] },

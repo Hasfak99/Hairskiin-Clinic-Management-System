@@ -20,6 +20,7 @@ import Branches from './pages/Branches';
 
 import Departments from './pages/Departments';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import DoctorDashboard from './pages/DoctorDashboard';
 
 // Protected Route wrapper
 function ProtectedRoute({ children }) {
@@ -57,6 +58,20 @@ function MainLayout({ children }) {
     );
 }
 
+function DashboardWrapper() {
+    const { user } = useAuth();
+
+    if (user?.role === 'super_admin') {
+        return <SuperAdminDashboard />;
+    }
+
+    if (user?.role === 'doctor') {
+        return <DoctorDashboard />;
+    }
+
+    return <Dashboard />;
+}
+
 function App() {
     const { isAuthenticated } = useAuth();
 
@@ -75,7 +90,15 @@ function App() {
             <Route path="/" element={
                 <ProtectedRoute>
                     <MainLayout>
-                        <Dashboard />
+                        <DashboardWrapper />
+                    </MainLayout>
+                </ProtectedRoute>
+            } />
+
+            <Route path="/doctor-dashboard" element={
+                <ProtectedRoute>
+                    <MainLayout>
+                        <DoctorDashboard />
                     </MainLayout>
                 </ProtectedRoute>
             } />
