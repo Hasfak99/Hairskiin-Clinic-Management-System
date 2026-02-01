@@ -215,6 +215,10 @@ async def create_appointment(
     if existing:
         raise HTTPException(status_code=400, detail="Time slot already booked")
     
+    # Auto-assign stylist_id if the creator is a doctor
+    if appointment.stylist_id is None and current_user.role == models.UserRole.doctor:
+        appointment.stylist_id = current_user.user_id
+
     db_appointment = models.Appointment(**appointment.model_dump())
     db.add(db_appointment)
     db.commit()

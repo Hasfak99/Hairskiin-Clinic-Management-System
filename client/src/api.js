@@ -180,6 +180,7 @@ export const analyticsAPI = {
     getClientStats: () => api.get('/analytics/client-stats'),
     getPeakHours: () => api.get('/analytics/peak-hours'),
     getDoctorStats: () => api.get('/analytics/doctor-stats'),
+    getDoctorTreatments: () => api.get('/analytics/doctor-treatments'),
 };
 
 // ==================== GLOBAL SEARCH ====================

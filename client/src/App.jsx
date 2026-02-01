@@ -21,6 +21,7 @@ import Branches from './pages/Branches';
 import Departments from './pages/Departments';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
+import DoctorHistory from './pages/DoctorHistory';
 
 // Protected Route wrapper
 function ProtectedRoute({ children }) {
@@ -147,6 +148,14 @@ function App() {
                 <ProtectedRoute>
                     <MainLayout>
                         <Analytics />
+                    </MainLayout>
+                </ProtectedRoute>
+            } />
+
+            <Route path="/my-treatments" element={
+                <ProtectedRoute>
+                    <MainLayout>
+                        <DoctorHistory />
                     </MainLayout>
                 </ProtectedRoute>
             } />

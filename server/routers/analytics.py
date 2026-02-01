@@ -71,6 +71,42 @@ def get_doctor_stats(
         "upcoming_appointments": upcoming_list
     }
 
+@router.get("/doctor-treatments")
+def get_doctor_treatments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.doctor and current_user.role != UserRole.super_admin:
+         raise HTTPException(status_code=403, detail="Not authorized")
+         
+    # Get all treatments (appointments) for this doctor
+    # Ordering by date desc (recent first)
+    appointments = db.query(Appointment).filter(
+        Appointment.stylist_id == current_user.user_id
+    ).order_by(Appointment.appointment_date.desc(), Appointment.appointment_time.desc()).all()
+    
+    treatment_history = []
+    for apt in appointments:
+        client_name = apt.client.name if apt.client else "Unknown"
+        client_phone = apt.client.phone if apt.client else "Unknown"
+        treatment_name = apt.treatment.treatment_name if apt.treatment else "Unknown"
+        price = apt.treatment.price if apt.treatment else 0
+        
+        treatment_history.append({
+            "id": apt.appointment_id,
+            "client_name": client_name,
+            "client_phone": client_phone,
+            "treatment_name": treatment_name,
+            "price": price,
+            "date": apt.appointment_date,
+            "time": apt.appointment_time,
+            "status": apt.status,
+            "payment_status": apt.payment_status,
+            "notes": apt.notes
+        })
+        
+    return treatment_history
+
 @router.get("/super-admin", response_model=List[Dict[str, Any]])
 def get_super_admin_dashboard_data(
     db: Session = Depends(get_db),
