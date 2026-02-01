@@ -17,6 +17,7 @@ async def get_users(
     page: int = 1,
     size: int = 20,
     branch_id: Optional[int] = Query(None, description="Filter by branch"),
+    role: Optional[str] = Query(None, description="Filter by role"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
 ):
@@ -25,6 +26,9 @@ async def get_users(
     
     if branch_id:
         query = query.filter(models.User.branch_id == branch_id)
+
+    if role:
+        query = query.filter(models.User.role == role)
     
     # Get total count
     total = query.count()

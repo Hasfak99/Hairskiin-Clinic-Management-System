@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { analyticsAPI, appointmentsAPI, clientsAPI, treatmentsAPI } from '../api';
-import { Calendar, Users, DollarSign, Clock, User, Plus, X, Search, CheckCircle, Eye } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Calendar, Users, DollarSign, Clock, User, Plus, X, Search, CheckCircle, Eye, MapPin, Building } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -143,12 +144,36 @@ export default function DoctorDashboard() {
 
     if (!stats) return null;
 
+    const { user } = useAuth();
+
+    // ... loading checks ...
+
+    if (!stats) return null;
+
     return (
         <div>
             <div className="page-header">
                 <div>
                     <h1 className="page-title">Doctor Dashboard</h1>
                     <p className="page-subtitle">Welcome back, Dr. {stats.doctor_name}</p>
+
+                    <div style={{ display: 'flex', gap: 'var(--spacing-4)', marginTop: 'var(--spacing-2)' }}>
+                        {/* Branch Display */}
+                        {user?.branch_name && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
+                                <MapPin size={16} />
+                                <span style={{ fontWeight: 500 }}>{user.branch_name}</span>
+                            </div>
+                        )}
+
+                        {/* Department Display (Conditional) */}
+                        {user?.department_name === 'Hair Skin Clinic' && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', fontSize: 'var(--font-size-sm)', color: 'var(--primary-600)', background: 'var(--primary-50)', padding: '2px 8px', borderRadius: '4px' }}>
+                                <Building size={16} />
+                                <span style={{ fontWeight: 600 }}>Hair Skin Clinic</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--spacing-3)', alignItems: 'center' }}>
                     <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)' }}>
@@ -320,7 +345,7 @@ export default function DoctorDashboard() {
                                         </td>
                                         <td>
                                             <span className={`badge ${t.status === 'completed' ? 'badge-success' :
-                                                    t.status === 'cancelled' ? 'badge-danger' : 'badge-primary'
+                                                t.status === 'cancelled' ? 'badge-danger' : 'badge-primary'
                                                 }`}>
                                                 {t.status}
                                             </span>
@@ -491,7 +516,7 @@ export default function DoctorDashboard() {
                                 <label style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)' }}>Status</label>
                                 <div>
                                     <span className={`badge ${selectedTreatment.status === 'completed' ? 'badge-success' :
-                                            selectedTreatment.status === 'cancelled' ? 'badge-danger' : 'badge-primary'
+                                        selectedTreatment.status === 'cancelled' ? 'badge-danger' : 'badge-primary'
                                         }`}>
                                         {selectedTreatment.status}
                                     </span>

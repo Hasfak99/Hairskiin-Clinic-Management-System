@@ -73,7 +73,9 @@ export default function Appointments() {
             setDepartments(deptRes.data);
             setBranches(branchRes.data);
             // Filter users who can be stylists (all for now, or specific roles)
-            setStylists(branchRes.data ? (await usersAPI.getAll()).data.items : []);
+            setBranches(branchRes.data);
+            // Filter users who can be stylists (doctors only)
+            setStylists(branchRes.data ? (await usersAPI.getAll({ role: 'doctor' })).data.items : []);
             // Better to optimize this later, but reusing response
 
         } catch (error) {
@@ -249,6 +251,16 @@ export default function Appointments() {
             key: 'treatment_price',
             label: 'Price',
             render: (val) => `LKR ${val || 0}`,
+        },
+        {
+            key: 'stylist_name',
+            label: 'Doctor / Stylist',
+            render: (val) => (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
+                    <User size={14} className="text-muted" />
+                    <span>{val || 'Unassigned'}</span>
+                </div>
+            )
         },
         {
             key: 'status',
@@ -464,6 +476,22 @@ export default function Appointments() {
                                 ))}
                             </select>
                         )}
+                    </div>
+
+                    <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
+                        <label className="input-label">Doctor / Stylist</label>
+                        <select
+                            className="input"
+                            value={formData.stylist_id}
+                            onChange={(e) => setFormData({ ...formData, stylist_id: e.target.value })}
+                        >
+                            <option value="">-- Select Doctor/Stylist --</option>
+                            {stylists.map(s => (
+                                <option key={s.user_id} value={s.user_id}>
+                                    {s.full_name || s.username} ({s.role})
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     {selectedTreatment && (

@@ -58,6 +58,8 @@ async def get_appointments(
         apt_dict['treatment_name'] = apt.treatment.treatment_name if apt.treatment else None
         apt_dict['treatment_price'] = apt.treatment.price if apt.treatment else None
         apt_dict['department_name'] = apt.department.department_name if apt.department else None
+        # Provide stylist name (prefer full_name, fallback to username)
+        apt_dict['stylist_name'] = (apt.stylist.full_name or apt.stylist.username) if apt.stylist else "Unassigned"
         items.append(schemas.AppointmentResponse(**apt_dict))
     
     return schemas.PaginatedResponse(

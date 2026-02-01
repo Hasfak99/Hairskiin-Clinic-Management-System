@@ -12,6 +12,8 @@ import {
     LogOut,
     ChevronLeft,
     Sparkles,
+    Plus,
+
 
     Building2,
     Shield
@@ -23,6 +25,7 @@ const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'manager', 'receptionist', 'director', 'cashier', 'doctor'] },
     { path: '/clients', icon: Users, label: 'Clients', roles: ['admin', 'manager', 'receptionist', 'director', 'cashier', 'super_admin'] },
     { path: '/appointments', icon: Calendar, label: 'Appointments', roles: ['admin', 'manager', 'receptionist', 'director', 'cashier', 'super_admin', 'doctor'] },
+    { path: '/provide-treatment', icon: Plus, label: 'Provide Treatment', roles: ['doctor'] },
     { path: '/my-treatments', icon: Scissors, label: 'My Treatments', roles: ['doctor'] },
     { path: '/treatments', icon: Scissors, label: 'Treatments', roles: ['admin', 'manager', 'director', 'super_admin'] },
     { path: '/products', icon: Package, label: 'Products', roles: ['admin', 'manager', 'director', 'super_admin'], departmentRestricted: true },
