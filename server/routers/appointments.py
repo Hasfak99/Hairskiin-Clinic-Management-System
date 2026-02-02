@@ -132,6 +132,7 @@ async def get_upcoming_appointments(
 async def check_availability(
     appointment_date: date,
     treatment_id: int,
+    stylist_id: Optional[int] = Query(None, description="Filter availability for specific stylist"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
 ):
@@ -141,10 +142,17 @@ async def check_availability(
         raise HTTPException(status_code=404, detail="Treatment not found")
     
     # Get all booked appointments for that date
-    booked = db.query(models.Appointment)\
+    query = db.query(models.Appointment)\
         .filter(models.Appointment.appointment_date == appointment_date)\
-        .filter(models.Appointment.status != "cancelled")\
-        .all()
+        .filter(models.Appointment.status != "cancelled")
+    
+    # If stylist is specified, only check their schedule
+    # If no stylist specified, this currently checks GLOBAL availability (legacy behavior)
+    # TODO: Improve logic to check if *any* stylist is available
+    if stylist_id:
+        query = query.filter(models.Appointment.stylist_id == stylist_id)
+
+    booked = query.all()
     
     # Generate time slots (9 AM to 6 PM, 30-minute intervals)
     available_slots = []
@@ -209,22 +217,41 @@ async def create_appointment(
     if not treatment:
         raise HTTPException(status_code=404, detail="Treatment not found")
     
+    # Auto-assign stylist_id if the creator is a doctor (BEFORE conflict check)
+    if appointment.stylist_id is None and current_user.role == models.UserRole.doctor:
+        appointment.stylist_id = current_user.user_id
+
     # Check for conflicting appointments
-    existing = db.query(models.Appointment).filter(
+    # Scope to the specific stylist if one is assigned
+    conflict_query = db.query(models.Appointment).filter(
         and_(
             models.Appointment.appointment_date == appointment.appointment_date,
             models.Appointment.appointment_time == appointment.appointment_time,
             models.Appointment.status != "cancelled"
         )
-    ).first()
+    )
+
+    if appointment.stylist_id:
+         conflict_query = conflict_query.filter(models.Appointment.stylist_id == appointment.stylist_id)
+    
+    existing = conflict_query.first()
     
     if existing:
-        raise HTTPException(status_code=400, detail="Time slot already booked")
-    
-    # Auto-assign stylist_id if the creator is a doctor
-    if appointment.stylist_id is None and current_user.role == models.UserRole.doctor:
-        appointment.stylist_id = current_user.user_id
+        raise HTTPException(status_code=400, detail="Time slot already booked for this specialist")
 
+    # Check for CLIENT double booking (Client cannot be in two places at once)
+    client_concert_query = db.query(models.Appointment).filter(
+        and_(
+            models.Appointment.client_id == appointment.client_id,
+            models.Appointment.appointment_date == appointment.appointment_date,
+            models.Appointment.appointment_time == appointment.appointment_time,
+            models.Appointment.status != "cancelled"
+        )
+    ).first()
+
+    if client_concert_query:
+        raise HTTPException(status_code=400, detail="Client already has an appointment at this time")
+    
     db_appointment = models.Appointment(**appointment.model_dump())
     db.add(db_appointment)
     db.commit()

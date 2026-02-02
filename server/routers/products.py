@@ -125,7 +125,7 @@ async def get_product(
 async def create_product(
     product: schemas.ProductCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(require_admin_or_manager),
+    current_user: models.User = Depends(require_any_role),
     current_branch_id: Optional[int] = Depends(get_branch_id_dependency)
 ):
     """Create new product (Admin/Manager only)"""

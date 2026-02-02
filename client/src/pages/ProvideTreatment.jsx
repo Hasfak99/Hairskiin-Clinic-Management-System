@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyticsAPI, appointmentsAPI, clientsAPI, treatmentsAPI, productsAPI, usersAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
+import SearchableSelect from '../components/SearchableSelect';
 import { Search, Save, X, Plus, Trash2, User, Calendar, CheckCircle, Clock, FileText, Sparkles, ChevronRight, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -56,10 +57,12 @@ export default function ProvideTreatment() {
             setClients(clientsRes.data.items);
             setTreatmentOptions(treatmentsRes.data.items);
             setProductOptions(productsRes.data.items);
-            setDoctorOptions(doctorsRes.data.items);
-
             if (user?.role === 'doctor') {
+                // If logged in as doctor, ONLY show themselves
+                setDoctorOptions(doctorsRes.data.items.filter(d => d.user_id === user.user_id));
                 setFormData(prev => ({ ...prev, stylist_id: user.user_id }));
+            } else {
+                setDoctorOptions(doctorsRes.data.items);
             }
         } catch (error) {
             console.error('Error loading data:', error);
@@ -387,18 +390,15 @@ export default function ProvideTreatment() {
 
                                 <div className="flex gap-2 mb-4">
                                     <div className="relative flex-1">
-                                        <select
-                                            className="input w-full bg-white"
-                                            value={currentProduct}
-                                            onChange={e => setCurrentProduct(e.target.value)}
-                                        >
-                                            <option value="">Select Product to Add...</option>
-                                            {productOptions.map(p => (
-                                                <option key={p.product_id} value={p.product_id}>
-                                                    {p.product_name} (Stock: {p.stock_qty})
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <SearchableSelect
+                                            placeholder="Select Product to Add..."
+                                            options={productOptions.map(p => ({
+                                                value: p.product_id,
+                                                label: `${p.product_name} (Stock: ${p.stock_qty})`
+                                            }))}
+                                            value={currentProduct ? parseInt(currentProduct) : ''}
+                                            onChange={(val) => setCurrentProduct(val)}
+                                        />
                                     </div>
                                     <button
                                         type="button"
