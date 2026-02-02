@@ -169,6 +169,7 @@ export const billsAPI = {
     updatePayment: (id, status, method) => api.patch(`/bills/${id}/payment`, null, { params: { payment_status: status, payment_method: method } }),
     delete: (id) => api.delete(`/bills/${id}`),
     addItem: (id, item) => api.post(`/bills/${id}/items`, item),
+    deleteItem: (billId, detailId) => api.delete(`/bills/${billId}/items/${detailId}`),
 };
 
 // ==================== ANALYTICS ====================

@@ -308,3 +308,49 @@ async def add_bill_item(
     db.refresh(detail)
     
     return schemas.BillDetailResponse(**detail.__dict__)
+
+
+@router.delete("/{bill_id}/items/{detail_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_bill_item(
+    bill_id: int,
+    detail_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_any_role)
+):
+    """Remove item from bill"""
+    db_bill = db.query(models.Bill).filter(models.Bill.bill_id == bill_id).first()
+    if not db_bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    
+    # prevent modification if paid (optional, but good practice, though user might want to fix mistakes)
+    # if db_bill.payment_status == 'paid':
+    #     raise HTTPException(status_code=400, detail="Cannot modify paid bill")
+    
+    detail = db.query(models.BillDetail).filter(
+        models.BillDetail.bill_id == bill_id,
+        models.BillDetail.bill_detail_id == detail_id
+    ).first()
+    
+    if not detail:
+        raise HTTPException(status_code=404, detail="Item not found in bill")
+    
+    # Restore stock if product
+    if detail.item_type == "product":
+        product = db.query(models.Product).filter(models.Product.product_id == detail.item_id).first()
+        if product:
+            product.stock_qty += detail.quantity
+            
+    # Update totals
+    print(f"Removing item worth: {detail.total_price}. Old total: {db_bill.total_amount}")
+    db_bill.total_amount -= detail.total_price
+    
+    # Ensure total doesn't go negative due to float precision
+    if db_bill.total_amount < 0:
+        db_bill.total_amount = 0
+        
+    db_bill.final_amount = db_bill.total_amount - db_bill.discount + db_bill.tax
+    
+    db.delete(detail)
+    db.commit()
+    
+    return None

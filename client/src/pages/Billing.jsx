@@ -58,6 +58,14 @@ export default function Billing() {
         phone: '',
     });
 
+    // State for Adding Item to Existing Bill (View Modal)
+    const [viewAddItem, setViewAddItem] = useState(false);
+    const [viewNewItem, setViewNewItem] = useState({
+        type: 'product',
+        item_id: '',
+        quantity: 1,
+    });
+
     useEffect(() => {
         fetchData();
         fetchMetadata();
@@ -218,6 +226,50 @@ export default function Billing() {
             fetchData();
         } catch (error) {
             toast.error('Failed to update');
+        }
+    };
+
+    const handleAddItemToExistingBill = async () => {
+        if (!viewNewItem.item_id) return;
+
+        let itemData;
+        if (viewNewItem.type === 'treatment') {
+            const treatment = treatments.find(t => t.treatment_id === parseInt(viewNewItem.item_id));
+            if (!treatment) return;
+            itemData = {
+                item_type: 'treatment',
+                item_id: treatment.treatment_id,
+                item_name: treatment.treatment_name,
+                quantity: 1,
+                unit_price: treatment.price,
+            };
+        } else {
+            const product = products.find(p => p.product_id === parseInt(viewNewItem.item_id));
+            if (!product) return;
+            itemData = {
+                item_type: 'product',
+                item_id: product.product_id,
+                item_name: product.product_name,
+                quantity: parseInt(viewNewItem.quantity),
+                unit_price: product.price,
+            };
+        }
+
+        try {
+            await billsAPI.addItem(selectedBill.bill_id, itemData);
+            toast.success('Item added successfully');
+
+            // Refresh bill
+            const res = await billsAPI.getById(selectedBill.bill_id);
+            setSelectedBill(res.data);
+            fetchData();
+
+            // Reset form
+            setViewAddItem(false);
+            setViewNewItem({ type: 'treatment', item_id: '', quantity: 1 });
+        } catch (error) {
+            console.error(error);
+            toast.error(error.response?.data?.detail || 'Failed to add item');
         }
     };
 
@@ -723,16 +775,100 @@ export default function Billing() {
                             )}
                         </div>
 
+
                         <div style={{ marginBottom: 'var(--spacing-4)' }}>
-                            <p style={{ color: 'var(--text-muted)' }}>Items</p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-2)' }}>
+                                <p style={{ color: 'var(--text-muted)' }}>Items</p>
+                                {selectedBill.payment_status !== 'paid' && !viewAddItem && (
+                                    <button
+                                        className="btn btn-ghost btn-xs text-primary"
+                                        onClick={() => setViewAddItem(true)}
+                                    >
+                                        <Plus size={14} /> Add Item
+                                    </button>
+                                )}
+                            </div>
+
+                            {viewAddItem && (
+                                <div style={{
+                                    padding: 'var(--spacing-3)',
+                                    background: 'var(--bg-subtle)',
+                                    borderRadius: 'var(--radius-md)',
+                                    marginBottom: 'var(--spacing-3)',
+                                    border: '1px solid var(--border)'
+                                }}>
+                                    <div style={{ display: 'flex', gap: 'var(--spacing-2)', marginBottom: 'var(--spacing-2)' }}>
+                                        {/* Restricted to Product only as requested */}
+                                        <div style={{ flex: 1 }}>
+                                            <SearchableSelect
+                                                placeholder="Select Product"
+                                                options={products.map(p => ({
+                                                    value: p.product_id,
+                                                    label: `${p.product_name} - LKR ${p.price} (Stock: ${p.stock_qty})`
+                                                }))}
+                                                value={viewNewItem.item_id ? parseInt(viewNewItem.item_id) : ''}
+                                                onChange={(val) => setViewNewItem({ ...viewNewItem, item_id: val, type: 'product' })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'center' }}>
+                                        <div style={{ width: 80 }}>
+                                            <input
+                                                type="number"
+                                                className="input text-sm p-1"
+                                                value={viewNewItem.quantity}
+                                                onChange={(e) => setViewNewItem({ ...viewNewItem, quantity: e.target.value })}
+                                                min="1"
+                                                placeholder="Qty"
+                                            />
+                                        </div>
+                                        <div style={{ flex: 1 }}></div>
+                                        <button className="btn btn-ghost btn-sm" onClick={() => setViewAddItem(false)}>Cancel</button>
+                                        <button
+                                            className="btn btn-primary btn-sm"
+                                            onClick={handleAddItemToExistingBill}
+                                            disabled={!viewNewItem.item_id}
+                                        >
+                                            Add
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                             {selectedBill.details?.map((item, i) => (
                                 <div key={i} style={{
                                     display: 'flex',
                                     justifyContent: 'space-between',
+                                    alignItems: 'center',
                                     padding: 'var(--spacing-2) 0',
                                     borderBottom: '1px solid var(--border)',
                                 }}>
-                                    <span>{item.item_name} x{item.quantity}</span>
+                                    <div>
+                                        <span>{item.item_name} x{item.quantity}</span>
+                                        {/* REMOVE BUTTON ONLY IF NOT PAID */}
+                                        {selectedBill.payment_status !== 'paid' && (
+                                            <button
+                                                className="btn btn-ghost btn-xs ml-2 text-error"
+                                                onClick={async () => {
+                                                    if (!confirm('Remove this item?')) return;
+                                                    try {
+                                                        await billsAPI.deleteItem(selectedBill.bill_id, item.bill_detail_id);
+                                                        toast.success('Item removed');
+                                                        // Refresh bill data
+                                                        const res = await billsAPI.getById(selectedBill.bill_id);
+                                                        setSelectedBill(res.data);
+                                                        fetchData(); // Refresh list to update totals
+                                                    } catch (error) {
+                                                        console.error(error);
+                                                        toast.error('Failed to remove item');
+                                                    }
+                                                }}
+                                                style={{ color: 'var(--error-500)', padding: 4 }}
+                                                title="Remove Item"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
                                     <span style={{ fontWeight: 500 }}>LKR {item.total_price}</span>
                                 </div>
                             ))}
