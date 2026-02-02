@@ -129,6 +129,7 @@ export const treatmentsAPI = {
     create: (data) => api.post('/treatments/', data),
     update: (id, data) => api.put(`/treatments/${id}`, data),
     delete: (id) => api.delete(`/treatments/${id}`),
+    recordTreatment: (data) => api.post('/treatments/record', data),
 };
 
 // ==================== PRODUCTS ====================

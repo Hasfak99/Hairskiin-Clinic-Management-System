@@ -176,3 +176,135 @@ async def delete_treatment(
     db_treatment.is_active = False
     db.commit()
     return None
+
+
+@router.post("/record", status_code=status.HTTP_201_CREATED)
+async def record_treatment(
+    data: schemas.RecordTreatmentRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_any_role)
+):
+    """Record a completed treatment with products"""
+    # 1. Validate Client
+    client = db.query(models.Client).filter(models.Client.client_id == data.client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    # 2. Validate Treatment
+    treatment = db.query(models.Treatment).filter(models.Treatment.treatment_id == data.treatment_id).first()
+    if not treatment:
+        raise HTTPException(status_code=404, detail="Treatment not found")
+
+    # 3. Handle Appointment (Update Existing or Create New)
+    appointment = None
+    
+    # Determine Stylist ID logic (applies to both cases)
+    stylist_id = data.stylist_id
+    if not stylist_id and current_user.role == models.UserRole.doctor:
+        stylist_id = current_user.user_id
+
+    if data.appointment_id:
+        # Update existing appointment
+        appointment = db.query(models.Appointment).filter(models.Appointment.appointment_id == data.appointment_id).first()
+        if not appointment:
+            raise HTTPException(status_code=404, detail="Appointment not found")
+        
+        # Verify it belongs to the client
+        if appointment.client_id != data.client_id:
+            raise HTTPException(status_code=400, detail="Appointment does not belong to this client")
+            
+        appointment.status = "completed"
+        # Update details if changed
+        appointment.treatment_id = data.treatment_id
+        if data.notes:
+            appointment.notes = data.notes
+        
+        # Update stylist if determined
+        if stylist_id:
+            appointment.stylist_id = stylist_id
+        
+        db.commit()
+        db.refresh(appointment)
+    else:
+        # Create New Appointment (Completed)
+        now_time = datetime.now().time()
+        today_date = datetime.now().date()
+
+        appointment = models.Appointment(
+            client_id=data.client_id,
+            treatment_id=data.treatment_id,
+            branch_id=data.branch_id,
+            department_id=treatment.department_id,
+            appointment_date=today_date,
+            appointment_time=now_time,
+            status="completed",
+            payment_status="pending",
+            stylist_id=stylist_id,
+            notes=data.notes
+        )
+        db.add(appointment)
+        db.flush() # Get ID
+
+    # 4. Create Bill
+    bill = models.Bill(
+        client_id=data.client_id,
+        appointment_id=appointment.appointment_id,
+        branch_id=data.branch_id,
+        department_id=treatment.department_id,
+        stylist_id=stylist_id,
+        payment_status="pending",
+        bill_date=datetime.now()
+    )
+    db.add(bill)
+    db.flush()
+
+    total_amount = 0.0
+
+    # 5. Add Treatment to Bill
+    treat_detail = models.BillDetail(
+        bill_id=bill.bill_id,
+        item_type="treatment",
+        item_id=treatment.treatment_id,
+        item_name=treatment.treatment_name,
+        quantity=1,
+        unit_price=treatment.price,
+        total_price=treatment.price
+    )
+    db.add(treat_detail)
+    total_amount += treatment.price
+
+    # 6. Add Products
+    for prod_item in data.products:
+        product = db.query(models.Product).filter(models.Product.product_id == prod_item.product_id).first()
+        if not product:
+            continue 
+        
+        # Decrement stock (simple implementation, can be refined)
+        if product.stock_qty >= prod_item.quantity:
+            product.stock_qty -= prod_item.quantity
+        
+        item_total = product.price * prod_item.quantity
+        prod_detail = models.BillDetail(
+            bill_id=bill.bill_id,
+            item_type="product",
+            item_id=product.product_id,
+            item_name=product.product_name,
+            quantity=prod_item.quantity,
+            unit_price=product.price,
+            total_price=item_total
+        )
+        db.add(prod_detail)
+        total_amount += item_total
+
+    # Update Bill Totals
+    bill.total_amount = total_amount
+    bill.final_amount = total_amount # Tax/Discount can be applied later by receptionist
+
+    db.commit()
+    db.refresh(appointment)
+
+    return {
+        "message": "Treatment recorded successfully",
+        "appointment_id": appointment.appointment_id,
+        "bill_id": bill.bill_id
+    }

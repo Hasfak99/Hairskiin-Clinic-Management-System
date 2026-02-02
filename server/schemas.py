@@ -251,6 +251,21 @@ class TreatmentResponse(TreatmentBase):
         from_attributes = True
 
 
+class TreatmentProductItem(BaseModel):
+    product_id: int
+    quantity: int = Field(default=1, gt=0)
+
+
+class RecordTreatmentRequest(BaseModel):
+    appointment_id: Optional[int] = None
+    client_id: int
+    treatment_id: int
+    stylist_id: Optional[int] = None
+    products: List[TreatmentProductItem] = []
+    notes: Optional[str] = None
+    branch_id: int
+
+
 # ==================== PRODUCT SCHEMAS ====================
 class ProductBase(BaseModel):
     product_name: str = Field(..., min_length=2, max_length=100)

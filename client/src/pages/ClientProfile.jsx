@@ -1,24 +1,50 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { clientsAPI } from '../api';
-import { User, Phone, Mail, MapPin, Calendar, Clock, Banknote } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Calendar, Clock, Banknote, ChevronLeft } from 'lucide-react';
 import { format } from 'date-fns';
+import { useAuth } from '../context/AuthContext';
 
 export default function ClientProfile() {
-    const { qrCode } = useParams();
+    const { qrCode, id } = useParams(); // Support both
+    const navigate = useNavigate();
+    const { isAuthenticated, user } = useAuth();
     const [client, setClient] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchClientData();
-    }, [qrCode]);
+    const isInternal = !!id; // True if accessed via internal route
 
-    const fetchClientData = async () => {
+    // Check if user has permission to see financial data (Not for Doctors)
+    const canViewFinancials = !isInternal || ['admin', 'manager', 'receptionist', 'director', 'super_admin'].includes(user?.role);
+
+    useEffect(() => {
+        if (id) {
+            fetchInternalClientData(id);
+        } else if (qrCode) {
+            fetchPublicClientData(qrCode);
+        }
+    }, [id, qrCode]);
+
+    const fetchPublicClientData = async (code) => {
         try {
             setLoading(true);
             setError(null);
-            const response = await clientsAPI.scanQRPublic(qrCode);
+            const response = await clientsAPI.scanQRPublic(code);
+            setClient(response.data);
+        } catch (err) {
+            console.error('Error fetching client:', err);
+            setError(err.response?.data?.detail || 'Client not found');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchInternalClientData = async (clientId) => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await clientsAPI.getById(clientId);
             setClient(response.data);
         } catch (err) {
             console.error('Error fetching client:', err);
@@ -35,9 +61,9 @@ export default function ClientProfile() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
+                background: isInternal ? 'var(--bg-app)' : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
             }}>
-                <div style={{ color: 'white', fontSize: '1.2rem' }}>Loading...</div>
+                <div style={isInternal ? { color: 'var(--text-primary)' } : { color: 'white', fontSize: '1.2rem' }}>Loading...</div>
             </div>
         );
     }
@@ -49,56 +75,74 @@ export default function ClientProfile() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+                background: isInternal ? 'var(--bg-app)' : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
                 flexDirection: 'column',
                 gap: '1rem'
             }}>
                 <div style={{ color: '#ff6b6b', fontSize: '1.5rem' }}>⚠️ {error}</div>
-                <div style={{ color: '#8b8b8b' }}>Please check the QR code and try again</div>
+                <div style={{ color: '#8b8b8b' }}>Client not found</div>
+                {isInternal && (
+                    <button className="btn btn-secondary" onClick={() => navigate(-1)}>Go Back</button>
+                )}
             </div>
         );
     }
 
+    // Styles for Internal vs Public view
+    const containerStyle = isInternal ? {
+        minHeight: '100vh',
+        background: 'var(--bg-app)',
+        padding: '2rem 1rem'
+    } : {
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+        padding: '2rem 1rem'
+    };
+
+    const textPrimary = isInternal ? 'var(--text-primary)' : 'white';
+    const textSecondary = isInternal ? 'var(--text-secondary)' : '#ccc';
+    const cardBg = isInternal ? 'var(--surface)' : 'rgba(255,255,255,0.05)';
+    const cardBorder = isInternal ? '1px solid var(--border)' : '1px solid rgba(255,255,255,0.1)';
+
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-            padding: '2rem 1rem'
-        }}>
+        <div style={containerStyle}>
             <div style={{
-                maxWidth: '600px',
+                maxWidth: '800px',
                 margin: '0 auto'
             }}>
-                {/* Header */}
-                <div style={{
-                    textAlign: 'center',
-                    marginBottom: '2rem'
-                }}>
-                    <h1 style={{
-                        color: '#ffd700',
-                        fontSize: '1.5rem',
-                        fontWeight: '600',
-                        marginBottom: '0.5rem'
-                    }}>
-                        Hairskiin CRM
-                    </h1>
-                    <p style={{ color: '#8b8b8b', fontSize: '0.9rem' }}>Client Profile</p>
-                </div>
+                {isInternal && (
+                    <button
+                        className="btn btn-ghost"
+                        onClick={() => navigate('/clients')}
+                        style={{ marginBottom: '1rem', paddingLeft: 0 }}
+                    >
+                        <ChevronLeft size={20} /> Back to Clients
+                    </button>
+                )}
+
+                {/* Header - Only different for public */}
+                {!isInternal ? (
+                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                        <h1 style={{ color: '#ffd700', fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                            Hairskiin CRM
+                        </h1>
+                        <p style={{ color: '#8b8b8b', fontSize: '0.9rem' }}>Client Profile</p>
+                    </div>
+                ) : (
+                    <div style={{ marginBottom: '2rem' }}>
+                        <h1 className="page-title">Client Profile</h1>
+                    </div>
+                )}
 
                 {/* Client Card */}
                 <div style={{
-                    background: 'rgba(255,255,255,0.05)',
+                    background: cardBg,
                     borderRadius: '16px',
                     padding: '1.5rem',
                     marginBottom: '1.5rem',
-                    border: '1px solid rgba(255,255,255,0.1)'
+                    border: cardBorder
                 }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1rem',
-                        marginBottom: '1.5rem'
-                    }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                         <div style={{
                             width: '60px',
                             height: '60px',
@@ -114,10 +158,10 @@ export default function ClientProfile() {
                             {client.name?.[0]?.toUpperCase()}
                         </div>
                         <div>
-                            <h2 style={{ color: 'white', fontSize: '1.3rem', fontWeight: '600' }}>
+                            <h2 style={{ color: textPrimary, fontSize: '1.3rem', fontWeight: '600' }}>
                                 {client.name}
                             </h2>
-                            <p style={{ color: '#8b8b8b', fontSize: '0.9rem' }}>
+                            <p style={{ color: textSecondary, fontSize: '0.9rem' }}>
                                 Client ID: #{client.client_id}
                             </p>
                         </div>
@@ -125,18 +169,18 @@ export default function ClientProfile() {
 
                     {/* Contact Info */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#ccc' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: textSecondary }}>
                             <Phone size={18} color="#ffd700" />
                             <span>{client.phone}</span>
                         </div>
                         {client.email && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#ccc' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: textSecondary }}>
                                 <Mail size={18} color="#ffd700" />
                                 <span>{client.email}</span>
                             </div>
                         )}
                         {client.address && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#ccc' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: textSecondary }}>
                                 <MapPin size={18} color="#ffd700" />
                                 <span>{client.address}</span>
                             </div>
@@ -147,45 +191,47 @@ export default function ClientProfile() {
                 {/* Stats */}
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gridTemplateColumns: canViewFinancials ? 'repeat(2, 1fr)' : '1fr',
                     gap: '1rem',
                     marginBottom: '1.5rem'
                 }}>
                     <div style={{
-                        background: 'rgba(255,215,0,0.1)',
+                        background: isInternal ? 'var(--surface)' : 'rgba(255,215,0,0.1)',
                         borderRadius: '12px',
                         padding: '1rem',
                         textAlign: 'center',
-                        border: '1px solid rgba(255,215,0,0.2)'
+                        border: isInternal ? '1px solid var(--border)' : '1px solid rgba(255,215,0,0.2)'
                     }}>
                         <div style={{ color: '#ffd700', fontSize: '1.5rem', fontWeight: 'bold' }}>
                             {client.total_appointments || 0}
                         </div>
-                        <div style={{ color: '#8b8b8b', fontSize: '0.8rem' }}>Total Visits</div>
+                        <div style={{ color: textSecondary, fontSize: '0.8rem' }}>Total Visits</div>
                     </div>
-                    <div style={{
-                        background: 'rgba(0,255,136,0.1)',
-                        borderRadius: '12px',
-                        padding: '1rem',
-                        textAlign: 'center',
-                        border: '1px solid rgba(0,255,136,0.2)'
-                    }}>
-                        <div style={{ color: '#00ff88', fontSize: '1.5rem', fontWeight: 'bold' }}>
-                            LKR {(client.total_spent || 0).toLocaleString()}
+                    {canViewFinancials && (
+                        <div style={{
+                            background: isInternal ? 'var(--surface)' : 'rgba(0,255,136,0.1)',
+                            borderRadius: '12px',
+                            padding: '1rem',
+                            textAlign: 'center',
+                            border: isInternal ? '1px solid var(--border)' : '1px solid rgba(0,255,136,0.2)'
+                        }}>
+                            <div style={{ color: '#00ff88', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                                LKR {(client.total_spent || 0).toLocaleString()}
+                            </div>
+                            <div style={{ color: textSecondary, fontSize: '0.8rem' }}>Total Spent</div>
                         </div>
-                        <div style={{ color: '#8b8b8b', fontSize: '0.8rem' }}>Total Spent</div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Treatment History */}
                 <div style={{
-                    background: 'rgba(255,255,255,0.05)',
+                    background: cardBg,
                     borderRadius: '16px',
                     padding: '1.5rem',
-                    border: '1px solid rgba(255,255,255,0.1)'
+                    border: cardBorder
                 }}>
                     <h3 style={{
-                        color: 'white',
+                        color: textPrimary,
                         fontSize: '1.1rem',
                         fontWeight: '600',
                         marginBottom: '1rem'
@@ -194,14 +240,14 @@ export default function ClientProfile() {
                     </h3>
 
                     {(!client.treatments_done || client.treatments_done.length === 0) ? (
-                        <p style={{ color: '#8b8b8b', textAlign: 'center', padding: '2rem 0' }}>
+                        <p style={{ color: textSecondary, textAlign: 'center', padding: '2rem 0' }}>
                             No treatments yet
                         </p>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {client.treatments_done.map((treatment, idx) => (
                                 <div key={idx} style={{
-                                    background: 'rgba(255,255,255,0.03)',
+                                    background: isInternal ? 'var(--bg-subtle)' : 'rgba(255,255,255,0.03)',
                                     borderRadius: '10px',
                                     padding: '1rem',
                                     display: 'flex',
@@ -209,10 +255,10 @@ export default function ClientProfile() {
                                     alignItems: 'center'
                                 }}>
                                     <div>
-                                        <div style={{ color: 'white', fontWeight: '500' }}>
+                                        <div style={{ color: textPrimary, fontWeight: '500' }}>
                                             {treatment.treatment_name}
                                         </div>
-                                        <div style={{ color: '#8b8b8b', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+                                        <div style={{ color: textSecondary, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
                                             <Calendar size={12} />
                                             {format(new Date(treatment.appointment_date), 'MMM d, yyyy')}
                                             <Clock size={12} style={{ marginLeft: '0.5rem' }} />
@@ -220,9 +266,13 @@ export default function ClientProfile() {
                                         </div>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
-                                        <div style={{ color: '#ffd700', fontWeight: '500' }}>
-                                            LKR {(treatment.amount || 0).toLocaleString()}
-                                        </div>
+                                        {canViewFinancials ? (
+                                            <div style={{ color: '#ffd700', fontWeight: '500' }}>
+                                                LKR {(treatment.amount || 0).toLocaleString()}
+                                            </div>
+                                        ) : (
+                                            <div style={{ height: '1.5rem' }}></div> // Spacer
+                                        )}
                                         <span style={{
                                             fontSize: '0.7rem',
                                             padding: '0.2rem 0.5rem',

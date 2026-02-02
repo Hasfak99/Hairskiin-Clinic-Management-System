@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Phone, Mail, User, History, QrCode, Printer } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { clientsAPI } from '../api';
@@ -8,6 +9,7 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
 export default function Clients() {
+    const navigate = useNavigate();
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -277,6 +279,14 @@ export default function Clients() {
                     <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
                         <button
                             className="btn btn-ghost btn-sm"
+                            onClick={() => navigate(`/clients/${row.client_id}`)}
+                            title="View Full Profile"
+                            style={{ color: 'var(--primary-600)' }}
+                        >
+                            <User size={16} />
+                        </button>
+                        <button
+                            className="btn btn-ghost btn-sm"
                             onClick={() => handleGenerateQR(row)}
                             title="Generate QR Code"
                             style={{ color: 'var(--primary-400)' }}
@@ -286,7 +296,7 @@ export default function Clients() {
                         <button
                             className="btn btn-ghost btn-sm"
                             onClick={() => openHistoryModal(row)}
-                            title="View History"
+                            title="View History (Quick)"
                         >
                             <History size={16} />
                         </button>

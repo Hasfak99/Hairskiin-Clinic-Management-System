@@ -113,6 +113,14 @@ function App() {
                 </ProtectedRoute>
             } />
 
+            <Route path="/clients/:id" element={
+                <ProtectedRoute>
+                    <MainLayout>
+                        <ClientProfile />
+                    </MainLayout>
+                </ProtectedRoute>
+            } />
+
             <Route path="/appointments" element={
                 <ProtectedRoute>
                     <MainLayout>

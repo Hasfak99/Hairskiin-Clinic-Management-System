@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Printer, Receipt, Search, Trash2, QrCode } from 'lucide-react';
+import { Plus, Printer, Receipt, Search, Trash2, QrCode, CheckCircle } from 'lucide-react';
 import { billsAPI, clientsAPI, treatmentsAPI, productsAPI, branchesAPI, departmentsAPI, usersAPI } from '../api';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
@@ -209,6 +209,8 @@ export default function Billing() {
         }
     };
 
+    const [paymentMethod, setPaymentMethod] = useState('cash'); // NEW state for checkout
+
     const handlePaymentUpdate = async (bill, status) => {
         try {
             await billsAPI.updatePayment(bill.bill_id, status);
@@ -216,6 +218,26 @@ export default function Billing() {
             fetchData();
         } catch (error) {
             toast.error('Failed to update');
+        }
+    };
+
+    const handleCompletePayment = async () => {
+        try {
+            if (!selectedBill) return;
+            await billsAPI.updatePayment(selectedBill.bill_id, 'paid', paymentMethod);
+            toast.success('Payment completed successfully');
+
+            // Refresh data
+            fetchData();
+
+            // Update selected bill local state to show 'paid' view
+            setSelectedBill({ ...selectedBill, payment_status: 'paid' });
+
+            // Optional: Auto print?
+            // handlePrint('thermal'); 
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to process payment');
         }
     };
 
@@ -303,7 +325,12 @@ export default function Billing() {
                 data={bills}
                 loading={loading}
                 emptyMessage="No bills found"
-                onRowClick={(row) => { setCashReceived(0); setSelectedBill(row); setShowViewModal(true); }}
+                onRowClick={(row) => {
+                    setCashReceived(0);
+                    setSelectedBill(row);
+                    setPaymentMethod('cash'); // Default
+                    setShowViewModal(true);
+                }}
                 pagination={{
                     currentPage: pagination.page,
                     totalPages: pagination.pages,
@@ -312,16 +339,7 @@ export default function Billing() {
                 }}
                 actions={(row) => (
                     <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
-                        {row.payment_status !== 'paid' && (
-                            <button
-                                className="btn btn-ghost btn-sm"
-                                onClick={(e) => { e.stopPropagation(); handlePaymentUpdate(row, 'paid'); }}
-                                title="Mark Paid"
-                                style={{ color: 'var(--success-500)' }}
-                            >
-                                Paid
-                            </button>
-                        )}
+                        {/* Removed Quick Paid button to force review in modal */}
                     </div>
                 )}
             />
@@ -676,13 +694,19 @@ export default function Billing() {
             <Modal
                 isOpen={showViewModal}
                 onClose={() => setShowViewModal(false)}
-                title={`Bill #${selectedBill?.bill_id?.toString().padStart(4, '0')}`}
+                title={`Bill #${selectedBill?.bill_id?.toString().padStart(4, '0')} - Status: ${selectedBill?.payment_status?.toUpperCase()}`}
                 size="lg"
                 footer={
-                    <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
-                        <button className="btn btn-secondary" onClick={() => handlePrint('thermal')}>
-                            <Receipt size={16} /> Thermal Receipt
-                        </button>
+                    <div style={{ display: 'flex', gap: 'var(--spacing-2)', width: '100%', justifyContent: 'flex-end' }}>
+                        {selectedBill?.payment_status === 'paid' ? (
+                            <button className="btn btn-secondary" onClick={() => handlePrint('thermal')}>
+                                <Receipt size={16} /> Print Receipt
+                            </button>
+                        ) : (
+                            <button className="btn btn-primary" onClick={() => handleCompletePayment()} style={{ width: '100%' }}>
+                                <CheckCircle size={18} style={{ marginRight: 8 }} /> Confirm Payment (LKR {selectedBill?.final_amount})
+                            </button>
+                        )}
                     </div>
                 }
             >
@@ -748,26 +772,58 @@ export default function Billing() {
                             </div>
                         </div>
 
-                        {cashReceived > 0 && (
-                            <div style={{
-                                marginTop: 'var(--spacing-4)',
-                                padding: 'var(--spacing-4)',
-                                background: 'var(--success-50)',
-                                border: '1px solid var(--success-200)',
-                                borderRadius: 'var(--radius-lg)',
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--spacing-1)' }}>
-                                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--success-700)' }}>Cash Received</span>
-                                    <span style={{ fontWeight: 600, color: 'var(--success-700)' }}>LKR {cashReceived}</span>
+                        {selectedBill.payment_status !== 'paid' && (
+                            <div style={{ marginTop: 'var(--spacing-6)', padding: 'var(--spacing-4)', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)' }}>
+                                <h4 style={{ marginBottom: 'var(--spacing-3)' }}>Process Payment</h4>
+
+                                <div className="grid grid-cols-2" style={{ gap: 'var(--spacing-4)' }}>
+                                    <div className="input-group">
+                                        <label className="input-label">Payment Method</label>
+                                        <select
+                                            className="input"
+                                            value={paymentMethod}
+                                            onChange={(e) => setPaymentMethod(e.target.value)}
+                                        >
+                                            <option value="cash">Cash</option>
+                                            <option value="card">Card</option>
+                                            <option value="upi">UPI</option>
+                                            <option value="online">Online Transfer</option>
+                                        </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label className="input-label">Cash Received</label>
+                                        <input
+                                            type="number"
+                                            className="input"
+                                            value={cashReceived}
+                                            onChange={(e) => setCashReceived(parseFloat(e.target.value) || 0)}
+                                            min="0"
+                                            placeholder="Enter amount..."
+                                        />
+                                    </div>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--success-800)' }}>Balance to Return</span>
-                                    <span style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, color: 'var(--success-800)' }}>
-                                        LKR {Math.max(0, cashReceived - selectedBill.final_amount)}
-                                    </span>
-                                </div>
+
+                                {cashReceived > 0 && (
+                                    <div style={{
+                                        marginTop: 'var(--spacing-3)',
+                                        padding: 'var(--spacing-3)',
+                                        background: 'var(--success-50)',
+                                        border: '1px solid var(--success-200)',
+                                        borderRadius: 'var(--radius-md)',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }}>
+                                        <span style={{ fontSize: '0.9rem', color: 'var(--success-700)' }}>Balance</span>
+                                        <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--success-700)' }}>
+                                            LKR {Math.max(0, cashReceived - selectedBill.final_amount).toFixed(2)}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         )}
+
+                        {/* Show balance even if paid, if checking history? No, usually not relevant unless stored. */}
                     </div>
                 )}
             </Modal>

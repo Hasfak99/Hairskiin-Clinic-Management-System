@@ -23,6 +23,7 @@ async def get_appointments(
     date_to: Optional[date] = Query(None, description="Filter to date"),
     status: Optional[str] = Query(None, description="Filter by status"),
     client_id: Optional[int] = Query(None, description="Filter by client"),
+    stylist_id: Optional[int] = Query(None, description="Filter by stylist/doctor"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
 ):
@@ -40,6 +41,9 @@ async def get_appointments(
     
     if client_id:
         query = query.filter(models.Appointment.client_id == client_id)
+
+    if stylist_id:
+        query = query.filter(models.Appointment.stylist_id == stylist_id)
     
     # Get total count
     total = query.count()
