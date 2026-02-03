@@ -30,6 +30,13 @@ async def get_appointments(
     """Get all appointments with optional filters and pagination"""
     query = db.query(models.Appointment)
     
+    # STRICT ISOLATION for non-super-admins
+    if current_user.role != models.UserRole.super_admin:
+        if current_user.branch_id:
+            query = query.filter(models.Appointment.branch_id == current_user.branch_id)
+        if current_user.department_id:
+            query = query.filter(models.Appointment.department_id == current_user.department_id)
+
     if date_from:
         query = query.filter(models.Appointment.appointment_date >= date_from)
     
@@ -83,10 +90,16 @@ async def get_today_appointments(
 ):
     """Get today's appointments"""
     today = date.today()
-    appointments = db.query(models.Appointment)\
-        .filter(models.Appointment.appointment_date == today)\
-        .order_by(models.Appointment.appointment_time)\
-        .all()
+    query = db.query(models.Appointment).filter(models.Appointment.appointment_date == today)
+
+    # STRICT ISOLATION
+    if current_user.role != models.UserRole.super_admin:
+        if current_user.branch_id:
+            query = query.filter(models.Appointment.branch_id == current_user.branch_id)
+        if current_user.department_id:
+            query = query.filter(models.Appointment.department_id == current_user.department_id)
+            
+    appointments = query.order_by(models.Appointment.appointment_time).all()
     
     result = []
     for apt in appointments:

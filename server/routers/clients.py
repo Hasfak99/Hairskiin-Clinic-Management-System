@@ -25,6 +25,23 @@ async def get_clients(
     """Get all clients with optional search and pagination"""
     query = db.query(models.Client)
     
+    
+    # Isolate data based on user role
+    # Super Admin / Admin: See all (unless filtered by query params - TODO later if needed)
+    # Others: Strictly restricted to their branch/department
+    
+    
+    # Isolate data based on user role
+    # Super Admin: See all
+    # Others (including Admin/Director): Strictly restricted to their branch/department IF ASSIGNED
+    
+    if current_user.role != models.UserRole.super_admin:
+        if current_user.branch_id:
+            query = query.filter(models.Client.branch_id == current_user.branch_id)
+        
+        if current_user.department_id:
+            query = query.filter(models.Client.department_id == current_user.department_id)
+            
     if search:
         search_term = f"%{search}%"
         query = query.filter(

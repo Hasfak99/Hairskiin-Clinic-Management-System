@@ -39,6 +39,22 @@ async def get_treatments(
             (models.Treatment.branch_id.is_(None))
         )
     # If filter_branch_id is None, show all treatments (admin/manager without branch)
+
+    # STRICT ISOLATION for non-super-admins (e.g. sgs who is Admin but specific to a branch)
+    if current_user.role != models.UserRole.super_admin:
+        # Filter by Department
+        if current_user.department_id:
+            query = query.filter(models.Treatment.department_id == current_user.department_id)
+        
+        # Filter by Branch (Override logic above if needed, or strictly enforce)
+        # The logic above handled filter_branch_id, but we must enforce current_user.branch_id if set
+        if current_user.branch_id:
+            query = query.filter(
+                (models.Treatment.branch_id == current_user.branch_id) | 
+                (models.Treatment.branch_id.is_(None)) # Still allow globals? Maybe user wanted STRICT isolation.
+                # User said: "only show Department Harskin branch Borella"
+                # If a treatment is global, it technically belongs to all branches. I will keep it for now.
+            )
     
     if active_only:
         query = query.filter(models.Treatment.is_active == True)
@@ -62,8 +78,15 @@ async def get_treatments(
     skip = (page - 1) * size
     treatments = query.order_by(models.Treatment.treatment_name).offset(skip).limit(size).all()
     
+    items = []
+    for t in treatments:
+        t_dict = t.__dict__.copy()
+        t_dict['branch_name'] = t.branch.branch_name if t.branch else None
+        t_dict['department_name'] = t.department.department_name if t.department else None
+        items.append(schemas.TreatmentResponse(**t_dict))
+
     return schemas.PaginatedResponse(
-        items=treatments,
+        items=items,
         total=total,
         page=page,
         size=size,

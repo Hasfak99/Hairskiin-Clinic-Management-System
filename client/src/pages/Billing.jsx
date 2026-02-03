@@ -570,14 +570,20 @@ export default function Billing() {
                                 <SearchableSelect
                                     placeholder={`Select ${newItem.type === 'treatment' ? 'Treatment' : 'Product'}`}
                                     options={newItem.type === 'treatment'
-                                        ? treatments.map(t => ({
-                                            value: t.treatment_id,
-                                            label: `${t.treatment_name} - LKR ${t.price}`
-                                        }))
-                                        : products.map(p => ({
-                                            value: p.product_id,
-                                            label: `${p.product_name} - LKR ${p.price} (Stock: ${p.stock_qty})`
-                                        }))
+                                        ? treatments
+                                            .filter(t => !formData.department_id || t.department_id === parseInt(formData.department_id))
+                                            .filter(t => !formData.branch_id || t.branch_id === parseInt(formData.branch_id) || !t.branch_id) // Allow global treatments if any
+                                            .map(t => ({
+                                                value: t.treatment_id,
+                                                label: `${t.treatment_name} - LKR ${t.price}`
+                                            }))
+                                        : products
+                                            .filter(p => !formData.department_id || p.department_id === parseInt(formData.department_id))
+                                            .filter(p => !formData.branch_id || p.branch_id === parseInt(formData.branch_id) || !p.branch_id) // Allow global products
+                                            .map(p => ({
+                                                value: p.product_id,
+                                                label: `${p.product_name} - LKR ${p.price} (Stock: ${p.stock_qty || 0})`
+                                            }))
                                     }
                                     value={newItem.item_id ? parseInt(newItem.item_id) : ''}
                                     onChange={(val) => setNewItem({ ...newItem, item_id: val })}
@@ -855,16 +861,35 @@ export default function Billing() {
                                     border: '1px solid var(--border)'
                                 }}>
                                     <div style={{ display: 'flex', gap: 'var(--spacing-2)', marginBottom: 'var(--spacing-2)' }}>
-                                        {/* Restricted to Product only as requested */}
+                                        <select
+                                            className="input"
+                                            value={viewNewItem.type || 'product'}
+                                            onChange={(e) => setViewNewItem({ ...viewNewItem, type: e.target.value, item_id: '' })}
+                                            style={{ width: 150 }}
+                                        >
+                                            <option value="product">Product</option>
+                                            <option value="treatment">Treatment</option>
+                                        </select>
                                         <div style={{ flex: 1 }}>
                                             <SearchableSelect
-                                                placeholder="Select Product"
-                                                options={products.map(p => ({
-                                                    value: p.product_id,
-                                                    label: `${p.product_name} - LKR ${p.price} (Stock: ${p.stock_qty})`
-                                                }))}
+                                                placeholder={`Select ${viewNewItem.type === 'treatment' ? 'Treatment' : 'Product'}`}
+                                                options={viewNewItem.type === 'treatment'
+                                                    ? treatments
+                                                        .filter(t => !selectedBill.department_id || t.department_id === selectedBill.department_id)
+                                                        .filter(t => !selectedBill.branch_id || t.branch_id === selectedBill.branch_id || !t.branch_id)
+                                                        .map(t => ({
+                                                            value: t.treatment_id,
+                                                            label: `${t.treatment_name} - LKR ${t.price}`
+                                                        }))
+                                                    : products
+                                                        .filter(p => !selectedBill.department_id || p.department_id === selectedBill.department_id)
+                                                        .filter(p => !selectedBill.branch_id || p.branch_id === selectedBill.branch_id || !p.branch_id)
+                                                        .map(p => ({
+                                                            value: p.product_id,
+                                                            label: `${p.product_name} - LKR ${p.price} (Stock: ${p.stock_qty || 0})`
+                                                        }))}
                                                 value={viewNewItem.item_id ? parseInt(viewNewItem.item_id) : ''}
-                                                onChange={(val) => setViewNewItem({ ...viewNewItem, item_id: val, type: 'product' })}
+                                                onChange={(val) => setViewNewItem({ ...viewNewItem, item_id: val })}
                                             />
                                         </div>
                                     </div>

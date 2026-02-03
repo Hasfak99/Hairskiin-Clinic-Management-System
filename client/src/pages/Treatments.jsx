@@ -222,6 +222,11 @@ export default function Treatments() {
             render: (val) => val || '-'
         },
         {
+            key: 'branch_name',
+            label: 'Branch',
+            render: (val) => val || '-'
+        },
+        {
             key: 'is_active',
             label: 'Status',
             render: (val) => (

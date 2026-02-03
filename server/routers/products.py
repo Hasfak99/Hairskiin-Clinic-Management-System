@@ -31,13 +31,26 @@ async def get_products(
     
     # Filter by branch_id - only if provided or user has a branch
     # If user has no branch_id, show all products
-    filter_branch_id = branch_id if branch_id else current_branch_id
-    if filter_branch_id is not None:
-        # Show products for this branch OR products with no branch (global)
-        query = query.filter(
-            (models.Product.branch_id == filter_branch_id) | 
-            (models.Product.branch_id.is_(None))
-        )
+    
+    # STRICT ISOLATION for non-super-admins
+    if current_user.role != models.UserRole.super_admin:
+        # Filter by Department
+        if current_user.department_id:
+            query = query.filter(models.Product.department_id == current_user.department_id)
+        
+        # Filter by Branch
+        if current_user.branch_id:
+            query = query.filter(
+                (models.Product.branch_id == current_user.branch_id) | 
+                (models.Product.branch_id.is_(None))
+            )
+    else:
+        # If Super Admin, allow optional filtering by branch if provided
+        if branch_id:
+             query = query.filter(
+                (models.Product.branch_id == branch_id) | 
+                (models.Product.branch_id.is_(None))
+            )
     
     if active_only:
         query = query.filter(models.Product.is_active == True)

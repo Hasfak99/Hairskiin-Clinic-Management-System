@@ -1,0 +1,33 @@
+--- USERS ---
+User: admin, Role: admin, Branch: 1, Dept: 1
+User: reception, Role: receptionist, Branch: 1, Dept: 1
+User: manager, Role: manager, Branch: 1, Dept: 1
+User: xyz, Role: receptionist, Branch: 2, Dept: 1
+User: mnb, Role: manager, Branch: 2, Dept: 1
+User: admin2, Role: admin, Branch: 2, Dept: 1
+User: admin3, Role: admin, Branch: 5, Dept: 1
+User: abc, Role: director, Branch: 1, Dept: 1
+User: admin5, Role: admin, Branch: 6, Dept: 1
+User: ad12, Role: cashier, Branch: 6, Dept: 1
+User: AdmS, Role: super_admin, Branch: None, Dept: None
+User: rep, Role: receptionist, Branch: 6, Dept: 1
+User: rew, Role: receptionist, Branch: 5, Dept: 1
+User: doc, Role: doctor, Branch: 2, Dept: 1
+User: doc1, Role: doctor, Branch: 2, Dept: 1
+User: doc3, Role: doctor, Branch: 2, Dept: 1
+User: doc4, Role: doctor, Branch: 2, Dept: 1
+User: doc5, Role: doctor, Branch: 2, Dept: 1
+User: spr, Role: super_admin, Branch: 1, Dept: None
+User: abc2, Role: director, Branch: 1, Dept: 1
+User: ress1, Role: receptionist, Branch: 2, Dept: 1
+User: hsuser, Role: admin, Branch: 2, Dept: 4
+
+--- CLIENTS ---
+Client: sdfdfb (ID: 11), Branch: 1, Dept: 1
+Client: dsvdsvy (ID: 12), Branch: 2, Dept: 4
+Client: dfgf (ID: 13), Branch: 2, Dept: 1
+Client: vxxf (ID: 14), Branch: 2, Dept: 4
+Client: cvxv (ID: 15), Branch: 2, Dept: 4
+
+--- APPOINTMENTS ---
+Appt ID: 18, Status: booked, Branch: 2, Dept: 4

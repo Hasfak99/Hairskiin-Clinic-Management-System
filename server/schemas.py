@@ -257,6 +257,7 @@ class TreatmentResponse(TreatmentBase):
     created_at: datetime
     updated_at: datetime
     department_name: Optional[str] = None  # NEW
+    branch_name: Optional[str] = None  # NEW
 
     class Config:
         from_attributes = True
@@ -333,6 +334,7 @@ class AppointmentBase(BaseModel):
     guest_phone: Optional[str] = None  # NEW
     payment_status: Optional[str] = "pending"  # NEW
     branch_id: int
+    department_id: Optional[int] = None  # NEW
     stylist_id: Optional[int] = None  # NEW
 
 

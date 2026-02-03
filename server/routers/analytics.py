@@ -1,183 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import get_db
-from models import User, Branch, Client, Bill, Department, UserRole, Appointment
+from models import User, Branch, Client, Bill, Department, UserRole, Appointment, Product, Expense
 from auth import get_current_user
 from typing import List, Dict, Any
+from datetime import date, datetime, timedelta
 
 router = APIRouter(
     prefix="/analytics",
     tags=["Analytics"]
 )
-
-from datetime import date, datetime, timedelta
-
-@router.get("/doctor-stats")
-def get_doctor_stats(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if current_user.role != UserRole.doctor and current_user.role != UserRole.super_admin:
-         raise HTTPException(status_code=403, detail="Not authorized")
-
-    today = date.today()
-    
-    # 1. Today's Appointments
-    today_appointments_count = db.query(Appointment).filter(
-        Appointment.stylist_id == current_user.user_id,
-        func.date(Appointment.appointment_date) == today,
-        Appointment.status != 'cancelled'
-    ).count()
-    
-    # 2. Total Patients (Unique clients treated)
-    # distinct client_ids from appointments assigned to this doctor
-    total_patients = db.query(Appointment.client_id).filter(
-        Appointment.stylist_id == current_user.user_id
-    ).distinct().count()
-    
-    # 3. Personal Revenue
-    # Sum of bills where stylist_id is this user
-    my_revenue = db.query(func.sum(Bill.final_amount)).filter(
-        Bill.stylist_id == current_user.user_id,
-        Bill.payment_status == 'paid'
-    ).scalar() or 0.0
-    
-    # 4. Upcoming Appointments (Next 5)
-    upcoming = db.query(Appointment).filter(
-        Appointment.stylist_id == current_user.user_id,
-        Appointment.appointment_date >= today,
-        Appointment.status != 'cancelled'
-    ).order_by(Appointment.appointment_date, Appointment.appointment_time).limit(5).all()
-    
-    # Format upcoming appointments
-    upcoming_list = []
-    for apt in upcoming:
-        client_name = apt.client.name if apt.client else "Unknown"
-        treatment_name = apt.treatment.treatment_name if apt.treatment else "Unknown"
-        upcoming_list.append({
-            "id": apt.appointment_id,
-            "client_name": client_name,
-            "treatment_name": treatment_name,
-            "date": apt.appointment_date,
-            "time": apt.appointment_time,
-            "status": apt.status
-        })
-        
-    return {
-        "today_appointments": today_appointments_count,
-        "total_patients": total_patients,
-        "my_revenue": my_revenue,
-        "upcoming_appointments": upcoming_list
-    }
-
-@router.get("/doctor-treatments")
-def get_doctor_treatments(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if current_user.role != UserRole.doctor and current_user.role != UserRole.super_admin:
-         raise HTTPException(status_code=403, detail="Not authorized")
-         
-    # Get all treatments (appointments) for this doctor
-    # Ordering by date desc (recent first)
-    appointments = db.query(Appointment).filter(
-        Appointment.stylist_id == current_user.user_id
-    ).order_by(Appointment.appointment_date.desc(), Appointment.appointment_time.desc()).all()
-    
-    treatment_history = []
-    for apt in appointments:
-        client_name = apt.client.name if apt.client else "Unknown"
-        client_phone = apt.client.phone if apt.client else "Unknown"
-        treatment_name = apt.treatment.treatment_name if apt.treatment else "Unknown"
-        price = apt.treatment.price if apt.treatment else 0
-        
-        treatment_history.append({
-            "id": apt.appointment_id,
-            "client_name": client_name,
-            "client_phone": client_phone,
-            "treatment_name": treatment_name,
-            "price": price,
-            "date": apt.appointment_date,
-            "time": apt.appointment_time,
-            "status": apt.status,
-            "payment_status": apt.payment_status,
-            "notes": apt.notes
-        })
-        
-    return treatment_history
-
-@router.get("/super-admin", response_model=List[Dict[str, Any]])
-def get_super_admin_dashboard_data(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    # Ensure only super_admin can access this
-    # Ensure only super_admin can access this
-    if current_user.role != UserRole.super_admin:
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    # Get all departments
-    departments = db.query(Department).all()
-    
-    dashboard_data = []
-    
-    # Calculate for "All Departments" / "No Department" aggregation if needed? 
-    # The requirement is "department wise etc hairskin (all total)"
-    # So we will return a list of department metrics + maybe a "Total" row?
-    # Let's iterate through departments.
-    
-    for dept in departments:
-        dept_id = dept.department_id
-        
-        # Total Users in this department
-        user_count = db.query(User).filter(User.department_id == dept_id).count()
-        
-        # Total Branches linked to this department
-        # Departments can be linked to a branch, or used across branches if branch_id is null?
-        # Model: Department has branch_id (ForeignKey). 
-        # But wait, User has branch_id AND department_id. 
-        # Client has branch_id AND department_id.
-        # The requirement asks for "how many total branch in". 
-        # If a department is specific to a branch, it's 1. If it's global, it might be used in multiple?
-        # Actually, let's count how many distinct branches have usage of this department (e.g. users or bills or clients in this dept)
-        # OR just use the department's linked branch if strictly hierarchical.
-        # Looking at models.py: Department has branch_id. So a department belongs to ONE branch?
-        # If Department.branch_id is Null, maybe it's global?
-        # Let's check schema/values.
-        # In current setup "Hairskiin" and "Hair Skin Clinic" seem to be the main "brands" or "departments".
-        
-        # Let's count actvity based metrics.
-        
-        # Clients in this department
-        client_count = db.query(Client).filter(Client.department_id == dept_id).count()
-        
-        # Revenue for this department
-        revenue = db.query(func.sum(Bill.final_amount)).filter(Bill.department_id == dept_id).scalar() or 0.0
-        
-        # Active Branches for this department
-        # If department is linked to a branch
-        branch_count = 0
-        if dept.branch_id:
-            branch_count = 1
-        else:
-            # If global department, maybe count branches that have transactions for this dept?
-            # Or just count all branches if it is a major "Brand" department?
-            # Let's simple count branches that have users associated with this department
-            branch_count = db.query(User.branch_id).filter(User.department_id == dept_id).distinct().count()
-            
-        dashboard_data.append({
-            "department_name": dept.department_name,
-            "department_id": dept.department_id,
-            "total_users": user_count,
-            "total_clients": client_count,
-            "total_branches": branch_count,
-            "total_revenue": revenue
-        })
-        
-    return dashboard_data
-
-# ==================== STANDARD ANALYTICS ENDPOINTS ====================
 
 @router.get("/dashboard")
 def get_analytics_dashboard(
@@ -188,7 +21,7 @@ def get_analytics_dashboard(
     bill_query = db.query(Bill)
     client_query = db.query(Client)
     appt_query = db.query(Appointment)
-    product_query = db.query(models.Product)
+    product_query = db.query(Product)
 
     # Filter by Branch for non-Super Admins (or if user has branch_id)
     # Even Admins are usually branch-specific in this context if they are assigned to one.
@@ -196,7 +29,18 @@ def get_analytics_dashboard(
         bill_query = bill_query.filter(Bill.branch_id == current_user.branch_id)
         client_query = client_query.filter(Client.branch_id == current_user.branch_id)
         appt_query = appt_query.filter(Appointment.branch_id == current_user.branch_id)
-        product_query = product_query.filter(models.Product.branch_id == current_user.branch_id)
+        product_query = product_query.filter(Product.branch_id == current_user.branch_id)
+
+    # Filter by Department Strict Isolation
+    if current_user.department_id:
+        bill_query = bill_query.filter(Bill.department_id == current_user.department_id)
+        client_query = client_query.filter(Client.department_id == current_user.department_id)
+        appt_query = appt_query.filter(Appointment.department_id == current_user.department_id)
+        product_query = product_query.filter(Product.department_id == current_user.department_id)
+
+    # DEBUG LOGGING
+    with open("dashboard_debug.log", "a") as f:
+        f.write(f"User: {current_user.username}, Role: {current_user.role}, Br: {current_user.branch_id}, Dep: {current_user.department_id}\n")
 
     # 1. Revenue
     total_revenue = bill_query.with_entities(func.sum(Bill.final_amount)).scalar() or 0.0
@@ -213,12 +57,16 @@ def get_analytics_dashboard(
     # 3. Clients
     total_clients = client_query.count()
     
+    # DEBUG LOGGING RESULTS
+    with open("dashboard_debug.log", "a") as f:
+        f.write(f"Rev: {total_revenue}, Appts: {total_appointments}, Clients: {total_clients}\n")
+    
     today = date.today()
     first_of_month = today.replace(day=1)
     new_clients_this_month = client_query.filter(Client.created_at >= first_of_month).count()
 
     # 4. Low Stock
-    low_stock_products = product_query.filter(models.Product.stock_qty <= models.Product.min_stock).count()
+    low_stock_products = product_query.filter(Product.stock_qty <= Product.min_stock).count()
 
     return {
         "total_revenue": total_revenue,

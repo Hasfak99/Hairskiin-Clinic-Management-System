@@ -35,6 +35,14 @@ async def get_bills(
 
     if edit_request_status:
         query = query.filter(models.Bill.edit_request_status == edit_request_status)
+
+    # STRICT ISOLATION for non-super-admins
+    if current_user.role != models.UserRole.super_admin:
+        if current_user.branch_id:
+            query = query.filter(models.Bill.branch_id == current_user.branch_id)
+        
+        if current_user.department_id:
+            query = query.filter(models.Bill.department_id == current_user.department_id)
     
     # Get total count
     total = query.count()

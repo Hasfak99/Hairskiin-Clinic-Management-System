@@ -143,74 +143,94 @@ export default function Header() {
                 {/* Branch Selector (Admin/Manager only) */}
                 {(isAdmin() || isManager()) && branches.length > 0 && (
                     <div ref={branchRef} style={{ position: 'relative' }}>
-                        <button
-                            className="btn btn-ghost"
-                            onClick={() => setShowBranchMenu(!showBranchMenu)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 'var(--spacing-2)',
-                                fontSize: 'var(--font-size-sm)',
-                            }}
-                        >
-                            <Building2 size={18} />
-                            <span className="hide-mobile">
-                                {selectedBranch?.branch_name || 'Select Branch'}
-                            </span>
-                            <ChevronDown size={16} />
-                        </button>
-                        
-                        {showBranchMenu && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                right: 0,
-                                marginTop: 'var(--spacing-2)',
-                                background: 'white',
-                                border: '1px solid var(--border)',
-                                borderRadius: 'var(--radius-lg)',
-                                boxShadow: 'var(--shadow-lg)',
-                                minWidth: 200,
-                                zIndex: 1000,
-                                overflow: 'hidden',
-                            }}>
-                                {branches.map((branch) => (
+                        {/* 
+                           Filter branches: 
+                           - Super Admin: See all
+                           - Others: See only their assigned branch (if assigned), else all (if global)
+                        */}
+                        {(() => {
+                            const visibleBranches = (user?.role === 'super_admin' || !user?.branch_id)
+                                ? branches
+                                : branches.filter(b => b.branch_id === parseInt(user.branch_id));
+
+                            const canSwitch = visibleBranches.length > 1;
+
+                            return (
+                                <>
                                     <button
-                                        key={branch.branch_id}
-                                        onClick={() => {
-                                            selectBranch(branch);
-                                            setShowBranchMenu(false);
-                                        }}
+                                        className={`btn btn-ghost ${!canSwitch ? 'btn-disabled' : ''}`}
+                                        onClick={() => canSwitch && setShowBranchMenu(!showBranchMenu)}
                                         style={{
-                                            width: '100%',
-                                            padding: 'var(--spacing-3) var(--spacing-4)',
-                                            textAlign: 'left',
-                                            background: selectedBranch?.branch_id === branch.branch_id 
-                                                ? 'var(--surface-elevated)' 
-                                                : 'transparent',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            fontSize: 'var(--font-size-sm)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: 'var(--spacing-2)',
+                                            fontSize: 'var(--font-size-sm)',
+                                            cursor: canSwitch ? 'pointer' : 'default',
+                                            opacity: canSwitch ? 1 : 0.8
                                         }}
+                                        disabled={!canSwitch}
                                     >
-                                        <Building2 size={16} />
-                                        <span>{branch.branch_name}</span>
-                                        {!branch.is_active && (
-                                            <span style={{ 
-                                                fontSize: 'var(--font-size-xs)', 
-                                                color: 'var(--text-muted)',
-                                                marginLeft: 'auto'
-                                            }}>
-                                                (Inactive)
-                                            </span>
-                                        )}
+                                        <Building2 size={18} />
+                                        <span className="hide-mobile">
+                                            {selectedBranch?.branch_name || 'Select Branch'}
+                                        </span>
+                                        {canSwitch && <ChevronDown size={16} />}
                                     </button>
-                                ))}
-                            </div>
-                        )}
+
+                                    {showBranchMenu && canSwitch && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '100%',
+                                            right: 0,
+                                            marginTop: 'var(--spacing-2)',
+                                            background: 'white',
+                                            border: '1px solid var(--border)',
+                                            borderRadius: 'var(--radius-lg)',
+                                            boxShadow: 'var(--shadow-lg)',
+                                            minWidth: 200,
+                                            zIndex: 1000,
+                                            overflow: 'hidden',
+                                        }}>
+                                            {visibleBranches.map((branch) => (
+                                                <button
+                                                    key={branch.branch_id}
+                                                    onClick={() => {
+                                                        selectBranch(branch);
+                                                        setShowBranchMenu(false);
+                                                    }}
+                                                    style={{
+                                                        width: '100%',
+                                                        padding: 'var(--spacing-3) var(--spacing-4)',
+                                                        textAlign: 'left',
+                                                        background: selectedBranch?.branch_id === branch.branch_id
+                                                            ? 'var(--surface-elevated)'
+                                                            : 'transparent',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        fontSize: 'var(--font-size-sm)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 'var(--spacing-2)',
+                                                    }}
+                                                >
+                                                    <Building2 size={16} />
+                                                    <span>{branch.branch_name}</span>
+                                                    {!branch.is_active && (
+                                                        <span style={{
+                                                            fontSize: 'var(--font-size-xs)',
+                                                            color: 'var(--text-muted)',
+                                                            marginLeft: 'auto'
+                                                        }}>
+                                                            (Inactive)
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </div>
                 )}
 
