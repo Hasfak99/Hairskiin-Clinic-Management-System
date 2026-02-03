@@ -1,0 +1,25 @@
+--- DEPARTMENTS ---
+ID: 1, Name: Hair Skin Clinic
+ID: 2, Name: Harskin
+ID: 3, Name: Hair Skin Clinic
+
+--- USERS ---
+ID: 1, Name: admin, Role: admin, Branch: None, DeptID: 2
+ID: 2, Name: reception, Role: receptionist, Branch: None, DeptID: None
+ID: 3, Name: manager, Role: manager, Branch: None, DeptID: None
+ID: 4, Name: xyz, Role: receptionist, Branch: 2, DeptID: 1
+ID: 5, Name: mnb, Role: manager, Branch: 2, DeptID: 1
+ID: 6, Name: admin2, Role: admin, Branch: 2, DeptID: 1
+ID: 7, Name: admin3, Role: admin, Branch: 5, DeptID: 2
+ID: 8, Name: abc, Role: director, Branch: 1, DeptID: 1
+ID: 9, Name: admin5, Role: admin, Branch: 6, DeptID: 2
+ID: 10, Name: ad12, Role: cashier, Branch: 6, DeptID: 2
+ID: 11, Name: AdmS, Role: super_admin, Branch: None, DeptID: None
+ID: 12, Name: rep, Role: receptionist, Branch: 6, DeptID: 1
+ID: 13, Name: rew, Role: receptionist, Branch: 5, DeptID: 2
+ID: 14, Name: doc, Role: doctor, Branch: 2, DeptID: 1
+ID: 15, Name: doc1, Role: doctor, Branch: 2, DeptID: 1
+ID: 16, Name: doc3, Role: doctor, Branch: 2, DeptID: 1
+ID: 17, Name: doc4, Role: doctor, Branch: 2, DeptID: 1
+ID: 18, Name: doc5, Role: doctor, Branch: 2, DeptID: 1
+ID: 19, Name: spr, Role: super_admin, Branch: 1, DeptID: None

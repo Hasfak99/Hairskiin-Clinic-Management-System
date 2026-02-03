@@ -26,7 +26,7 @@ export default function Billing() {
     const [selectedBill, setSelectedBill] = useState(null);
     const [cashReceived, setCashReceived] = useState(0);
     const [printType, setPrintType] = useState('thermal'); // 'thermal' or 'professional'
-    const { user, selectedBranch } = useAuth();
+    const { user, selectedBranch, isManager } = useAuth();
     const [pagination, setPagination] = useState({
         page: 1,
         size: 20,
@@ -218,6 +218,32 @@ export default function Billing() {
     };
 
     const [paymentMethod, setPaymentMethod] = useState('cash'); // NEW state for checkout
+
+    const handleRequestEdit = async (billId) => {
+        try {
+            await billsAPI.requestEdit(billId);
+            toast.success('Edit request sent to manager');
+            // Refresh bill
+            const res = await billsAPI.getById(billId);
+            setSelectedBill(res.data);
+            fetchData();
+        } catch (error) {
+            toast.error(error.response?.data?.detail || 'Request failed');
+        }
+    };
+
+    const handleApproveEdit = async (billId) => {
+        try {
+            await billsAPI.approveEdit(billId);
+            toast.success('Edit request approved');
+            // Refresh bill
+            const res = await billsAPI.getById(billId);
+            setSelectedBill(res.data);
+            fetchData();
+        } catch (error) {
+            toast.error(error.response?.data?.detail || 'Approval failed');
+        }
+    };
 
     const handlePaymentUpdate = async (bill, status) => {
         try {
@@ -627,7 +653,7 @@ export default function Billing() {
                                 <input
                                     type="number"
                                     className="input"
-                                    value={formData.discount}
+                                    value={formData.discount || ''}
                                     onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) || 0 })}
                                     min="0"
                                     step="0.01"
@@ -650,7 +676,7 @@ export default function Billing() {
                                 <input
                                     type="number"
                                     className="input"
-                                    value={formData.tax}
+                                    value={formData.tax || ''}
                                     onChange={(e) => setFormData({ ...formData, tax: parseFloat(e.target.value) || 0 })}
                                     min="0"
                                     step="0.01"
@@ -716,9 +742,10 @@ export default function Billing() {
                             <input
                                 type="number"
                                 className="input"
-                                value={cashReceived}
+                                value={cashReceived || ''}
                                 onChange={(e) => setCashReceived(parseFloat(e.target.value) || 0)}
                                 min="0"
+                                placeholder="0.00"
                             />
                         </div>
 
@@ -750,6 +777,31 @@ export default function Billing() {
                 size="lg"
                 footer={
                     <div style={{ display: 'flex', gap: 'var(--spacing-2)', width: '100%', justifyContent: 'flex-end' }}>
+                        {/* Request Edit Logic */}
+                        {selectedBill?.payment_status === 'paid' && selectedBill?.edit_request_status !== 'approved' && (
+                            <div style={{ marginRight: 'auto' }}>
+                                {selectedBill.edit_request_status === 'pending' ? (
+                                    isManager() ? (
+                                        <button
+                                            className="btn btn-warning"
+                                            onClick={() => handleApproveEdit(selectedBill.bill_id)}
+                                        >
+                                            <CheckCircle size={16} /> Approve Edit Request
+                                        </button>
+                                    ) : (
+                                        <span className="badge badge-warning">Edit Approval Pending</span>
+                                    )
+                                ) : (
+                                    <button
+                                        className="btn btn-outline"
+                                        onClick={() => handleRequestEdit(selectedBill.bill_id)}
+                                    >
+                                        Request Edit
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
                         {selectedBill?.payment_status === 'paid' ? (
                             <button className="btn btn-secondary" onClick={() => handlePrint('thermal')}>
                                 <Receipt size={16} /> Print Receipt
@@ -779,7 +831,7 @@ export default function Billing() {
                         <div style={{ marginBottom: 'var(--spacing-4)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-2)' }}>
                                 <p style={{ color: 'var(--text-muted)' }}>Items</p>
-                                {selectedBill.payment_status !== 'paid' && !viewAddItem && (
+                                {((selectedBill.payment_status !== 'paid') || (selectedBill.payment_status === 'paid' && selectedBill.edit_request_status === 'approved')) && !viewAddItem && (
                                     <button
                                         className="btn btn-ghost btn-xs text-primary"
                                         onClick={() => setViewAddItem(true)}
@@ -844,8 +896,8 @@ export default function Billing() {
                                 }}>
                                     <div>
                                         <span>{item.item_name} x{item.quantity}</span>
-                                        {/* REMOVE BUTTON ONLY IF NOT PAID */}
-                                        {selectedBill.payment_status !== 'paid' && (
+                                        {/* REMOVE BUTTON IF NOT PAID OR APPROVED */}
+                                        {((selectedBill.payment_status !== 'paid') || (selectedBill.payment_status === 'paid' && selectedBill.edit_request_status === 'approved')) && (
                                             <button
                                                 className="btn btn-ghost btn-xs ml-2 text-error"
                                                 onClick={async () => {

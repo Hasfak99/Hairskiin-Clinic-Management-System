@@ -99,7 +99,16 @@ export default function Products() {
             resetForm();
             fetchProducts();
         } catch (error) {
-            toast.error(error.response?.data?.detail || 'Operation failed');
+            const detail = error.response?.data?.detail;
+            if (Array.isArray(detail)) {
+                // Handle Pydantic validation errors
+                const messages = detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join('\n');
+                toast.error(messages);
+            } else if (typeof detail === 'object') {
+                toast.error(JSON.stringify(detail));
+            } else {
+                toast.error(detail || 'Operation failed');
+            }
         }
     };
 
@@ -180,6 +189,7 @@ export default function Products() {
             ),
         },
         { key: 'category', label: 'Category', render: (val) => val || '-' },
+        { key: 'size', label: 'Size', render: (val) => val || '-' },
         {
             key: 'price',
             label: 'Price',
@@ -406,6 +416,17 @@ export default function Products() {
                         </div>
                     </div>
 
+                    <div className="input-group" style={{ marginBottom: 'var(--spacing-4)' }}>
+                        <label className="input-label">Size</label>
+                        <input
+                            type="text"
+                            className="input"
+                            value={formData.size || ''}
+                            onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                            placeholder="e.g., 100ml, 500g"
+                        />
+                    </div>
+
                     <div className="input-group">
                         <label className="input-label">Description</label>
                         <textarea
@@ -417,6 +438,6 @@ export default function Products() {
                     </div>
                 </form>
             </Modal>
-        </div>
+        </div >
     );
 }

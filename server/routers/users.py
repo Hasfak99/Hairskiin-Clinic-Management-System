@@ -30,6 +30,16 @@ async def get_users(
     if role:
         query = query.filter(models.User.role == role)
     
+    # Director Restriction: Can only view users in their department
+    if current_user.role == 'director':
+        if current_user.department_id:
+            query = query.filter(models.User.department_id == current_user.department_id)
+        else:
+            # If Director has no department assigned, they shouldn't see other departments' users.
+            # Returning empty list or users with no department (safe default)
+            # Choosing to show NOTHING to signal configuration error rather than leaking data.
+            query = query.filter(models.User.department_id == -1)
+    
     # Get total count
     total = query.count()
     

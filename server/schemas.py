@@ -274,6 +274,7 @@ class ProductBase(BaseModel):
     stock_qty: int = Field(default=0, ge=0)
     min_stock: int = Field(default=5, ge=0)
     category: Optional[str] = None
+    size: Optional[str] = None  # NEW
     is_global: Optional[bool] = False  # NEW: shared across branches
     branch_id: Optional[int] = None
     department_id: Optional[int] = None
@@ -290,6 +291,7 @@ class ProductUpdate(BaseModel):
     stock_qty: Optional[int] = None
     min_stock: Optional[int] = None
     category: Optional[str] = None
+    size: Optional[str] = None
     is_active: Optional[bool] = None
     is_global: Optional[bool] = None  # NEW
     branch_id: Optional[int] = None
@@ -343,7 +345,8 @@ class AppointmentUpdate(BaseModel):
     appointment_date: Optional[date] = None
     appointment_time: Optional[time] = None
     status: Optional[AppointmentStatus] = None
-    payment_status: Optional[str] = None  # NEW
+    payment_status: str
+    edit_request_status: Optional[str] = "none"  # NEW
     notes: Optional[str] = None
     department_id: Optional[int] = None
     stylist_id: Optional[int] = None  # NEW  # NEW
@@ -419,6 +422,7 @@ class BillResponse(BillBase):
     payment_status: str
     bill_date: datetime
     details: List[BillDetailResponse] = []
+    edit_request_status: Optional[str] = "none"  # NEW
     client_name: Optional[str] = None
     department_name: Optional[str] = None  # NEW
 

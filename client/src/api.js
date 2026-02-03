@@ -28,10 +28,14 @@ api.interceptors.request.use(
         }
         // Add branch_id to query params if available
         const branchId = localStorage.getItem('selectedBranchId');
-        if (branchId && config.params) {
-            config.params.branch_id = branchId;
-        } else if (branchId) {
-            config.params = { branch_id: branchId };
+        if (branchId) {
+            if (!config.params) {
+                config.params = {};
+            }
+            // Only inject branch_id if not already specified (allow overriding with null/value)
+            if (config.params.branch_id === undefined) {
+                config.params.branch_id = branchId;
+            }
         }
         return config;
     },
@@ -167,6 +171,8 @@ export const billsAPI = {
     create: (data) => api.post('/bills/', data),
     update: (id, data) => api.put(`/bills/${id}`, data),
     updatePayment: (id, status, method) => api.patch(`/bills/${id}/payment`, null, { params: { payment_status: status, payment_method: method } }),
+    requestEdit: (id) => api.post(`/bills/${id}/request-edit`),
+    approveEdit: (id) => api.post(`/bills/${id}/approve-edit`),
     delete: (id) => api.delete(`/bills/${id}`),
     addItem: (id, item) => api.post(`/bills/${id}/items`, item),
     deleteItem: (billId, detailId) => api.delete(`/bills/${billId}/items/${detailId}`),

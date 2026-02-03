@@ -113,6 +113,7 @@ def get_super_admin_dashboard_data(
     current_user: User = Depends(get_current_user)
 ):
     # Ensure only super_admin can access this
+    # Ensure only super_admin can access this
     if current_user.role != UserRole.super_admin:
         raise HTTPException(status_code=403, detail="Not authorized")
 

@@ -30,8 +30,8 @@ if __name__ == "__main__":
         "Content-Type": "application/json"
     }
     
-    print("\n--- Making Request to /api/users/ ---")
-    url = "http://localhost:8000/api/users/?page=1&size=20"
+    print("\n--- Making Request to /api/bills/14 ---")
+    url = "http://localhost:8000/api/bills/14"
     
     try:
         req = urllib.request.Request(url, headers=headers)

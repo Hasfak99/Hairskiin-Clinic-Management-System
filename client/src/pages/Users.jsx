@@ -33,20 +33,29 @@ export default function Users() {
 
     useEffect(() => {
         // Only fetch if user is admin
-        if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin')) {
+        if (currentUser && (['admin', 'super_admin', 'director'].includes(currentUser.role))) {
             fetchUsers();
             fetchDepartments();
         } else {
             setLoading(false);
         }
-    }, [currentUser, pagination.page]);
+    }, [currentUser, pagination.page, currentUser?.role]);
 
     const fetchUsers = async () => {
         try {
-            const response = await usersAPI.getAll({
+            const params = {
                 page: pagination.page,
                 size: pagination.size
-            });
+            };
+
+            // For Director, explicitly allow fetching users from ALL branches (in their department)
+            // Passing null bypasses the API interceptor's auto-branch-injection
+            console.log('Current User Role:', currentUser?.role);
+            if (currentUser?.role === 'director') {
+                params.branch_id = null;
+            }
+
+            const response = await usersAPI.getAll(params);
             setUsers(response.data.items);
             setPagination(prev => ({
                 ...prev,

@@ -20,6 +20,7 @@ async def get_bills(
     size: int = 20,
     client_id: Optional[int] = Query(None, description="Filter by client"),
     payment_status: Optional[str] = Query(None, description="Filter by payment status"),
+    edit_request_status: Optional[str] = Query(None, description="Filter by edit request status"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
 ):
@@ -31,6 +32,9 @@ async def get_bills(
     
     if payment_status:
         query = query.filter(models.Bill.payment_status == payment_status)
+
+    if edit_request_status:
+        query = query.filter(models.Bill.edit_request_status == edit_request_status)
     
     # Get total count
     total = query.count()
@@ -44,6 +48,7 @@ async def get_bills(
         bill_dict = bill.__dict__.copy()
         bill_dict['client_name'] = bill.client.name if bill.client else None
         bill_dict['details'] = [schemas.BillDetailResponse(**d.__dict__) for d in bill.details]
+        bill_dict['edit_request_status'] = bill.edit_request_status  # Explicit access
         items.append(schemas.BillResponse(**bill_dict))
     
     return schemas.PaginatedResponse(
@@ -94,6 +99,7 @@ async def get_bill(
     bill_dict = bill.__dict__.copy()
     bill_dict['client_name'] = bill.client.name if bill.client else None
     bill_dict['details'] = [schemas.BillDetailResponse(**d.__dict__) for d in bill.details]
+    bill_dict['edit_request_status'] = bill.edit_request_status  # Explicit access
     
     return schemas.BillResponse(**bill_dict)
 
@@ -191,6 +197,13 @@ async def update_bill(
     if not db_bill:
         raise HTTPException(status_code=404, detail="Bill not found")
     
+    # Restriction: If paid and not approved, block (unless just updating notes/payment status? For now block all)
+    # Exception: allow updating payment status via this route if needed, but usually that's a separate patch.
+    # We'll strict block for now to be safe.
+    if db_bill.payment_status == 'paid' and db_bill.edit_request_status != 'approved':
+         # Allow updating ONLY notes maybe? For now strict block.
+         raise HTTPException(status_code=403, detail="Bill is paid. Request approval to edit.")
+    
     update_data = bill_update.model_dump(exclude_unset=True)
     
     for key, value in update_data.items():
@@ -236,6 +249,44 @@ async def update_payment_status(
     }
 
 
+@router.post("/{bill_id}/request-edit")
+async def request_bill_edit(
+    bill_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_any_role)
+):
+    """Request permission to edit a paid bill"""
+    db_bill = db.query(models.Bill).filter(models.Bill.bill_id == bill_id).first()
+    if not db_bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    
+    if db_bill.payment_status != 'paid':
+        raise HTTPException(status_code=400, detail="Only paid bills need edit approval")
+        
+    db_bill.edit_request_status = "pending"
+    db.commit()
+    return {"message": "Edit request sent", "status": "pending"}
+
+
+@router.post("/{bill_id}/approve-edit")
+async def approve_bill_edit(
+    bill_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_any_role)
+):
+    """Approve edit request for a bill"""
+    if current_user.role not in ['admin', 'manager', 'director', 'super_admin']:
+         raise HTTPException(status_code=403, detail="Only managers can approve edits")
+
+    db_bill = db.query(models.Bill).filter(models.Bill.bill_id == bill_id).first()
+    if not db_bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+        
+    db_bill.edit_request_status = "approved"
+    db.commit()
+    return {"message": "Edit request approved", "status": "approved"}
+
+
 @router.delete("/{bill_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_bill(
     bill_id: int,
@@ -272,6 +323,10 @@ async def add_bill_item(
     db_bill = db.query(models.Bill).filter(models.Bill.bill_id == bill_id).first()
     if not db_bill:
         raise HTTPException(status_code=404, detail="Bill not found")
+    
+    # Restriction: If paid and not approved, block
+    if db_bill.payment_status == 'paid' and db_bill.edit_request_status != 'approved':
+         raise HTTPException(status_code=403, detail="Bill is paid. Request approval to edit.")
     
     total_price = item.unit_price * item.quantity
     
@@ -321,6 +376,10 @@ async def delete_bill_item(
     db_bill = db.query(models.Bill).filter(models.Bill.bill_id == bill_id).first()
     if not db_bill:
         raise HTTPException(status_code=404, detail="Bill not found")
+    
+    # Restriction: If paid and not approved, block
+    if db_bill.payment_status == 'paid' and db_bill.edit_request_status != 'approved':
+         raise HTTPException(status_code=403, detail="Bill is paid. Request approval to edit.")
     
     # prevent modification if paid (optional, but good practice, though user might want to fix mistakes)
     # if db_bill.payment_status == 'paid':

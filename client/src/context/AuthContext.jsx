@@ -88,8 +88,8 @@ export function AuthProvider({ children }) {
         localStorage.setItem('selectedBranchId', branch.branch_id);
     };
 
-    const isAdmin = () => user?.role === 'admin' || user?.role === 'super_admin';
-    const isManager = () => ['manager', 'admin', 'super_admin'].includes(user?.role);
+    const isAdmin = () => user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'director';
+    const isManager = () => ['manager', 'admin', 'super_admin', 'director'].includes(user?.role);
     const isAuthenticated = () => !!token && !!user;
 
     const fetchBranches = async () => {

@@ -161,6 +161,7 @@ class Product(Base):
     stock_qty = Column(Integer, default=0)
     min_stock = Column(Integer, default=5)  # Low stock alert threshold
     category = Column(String(50), nullable=True)
+    size = Column(String(50), nullable=True)  # Product size (e.g. 100ml, 500g, Small)
     is_active = Column(Boolean, default=True)
     is_global = Column(Boolean, default=False)  # True = shared across all branches
     branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=True, index=True)
@@ -222,6 +223,7 @@ class Bill(Base):
     final_amount = Column(Float, default=0.0)
     payment_method = Column(String(50), nullable=True)
     payment_status = Column(String(20), default="pending")
+    edit_request_status = Column(String(20), default="none")  # none, pending, approved
     bill_date = Column(DateTime, server_default=func.now())
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now())

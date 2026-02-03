@@ -11,7 +11,7 @@ import {
     Clock,
     Mail
 } from 'lucide-react';
-import { analyticsAPI, appointmentsAPI, productsAPI } from '../api';
+import { analyticsAPI, appointmentsAPI, productsAPI, billsAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -19,8 +19,9 @@ import toast from 'react-hot-toast';
 export default function HairSkinDashboard() {
     const [stats, setStats] = useState(null);
     const [todayAppointments, setTodayAppointments] = useState([]);
+    const [pendingApprovals, setPendingApprovals] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { user } = useAuth();
+    const { user, isManager } = useAuth(); // Get isManager
 
     useEffect(() => {
         fetchDashboardData();
@@ -28,16 +29,29 @@ export default function HairSkinDashboard() {
 
     const fetchDashboardData = async () => {
         try {
-            const [statsRes, appointmentsRes] = await Promise.all([
+            const [statsRes, appointmentsRes, pendingRes] = await Promise.all([
                 analyticsAPI.getDashboard(),
                 appointmentsAPI.getToday(),
+                billsAPI.getAll({ edit_request_status: 'pending', size: 100 }), // Fetch pending
             ]);
             setStats(statsRes.data);
             setTodayAppointments(appointmentsRes.data);
+            setPendingApprovals(pendingRes.data.items || []);
         } catch (error) {
             console.error('Error fetching dashboard:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleApproveEdit = async (billId) => {
+        try {
+            await billsAPI.approveEdit(billId);
+            toast.success('Approved!');
+            // Refresh ONLY dashboard data to remove the item
+            fetchDashboardData();
+        } catch (error) {
+            toast.error('Failed to approve');
         }
     };
 
@@ -149,7 +163,47 @@ export default function HairSkinDashboard() {
             </div>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-2" style={{ gap: 'var(--spacing-6)' }}>
+            <div className={`grid grid-cols-${isManager() && pendingApprovals.length > 0 ? '3' : '2'}`} style={{ gap: 'var(--spacing-6)' }}>
+
+                {/* Pending Approvals (Debug Mode: Always Show) */}
+                {true && (
+                    <div className="card" style={{ borderColor: 'var(--warning-200)', background: 'var(--warning-50)' }}>
+                        <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--warning-700)', marginBottom: 'var(--spacing-4)' }}>
+                            ⚠️ Pending Approvals ({pendingApprovals.length})
+                        </h3>
+                        {pendingApprovals.length === 0 ? (
+                            <p>No pending approvals found.</p>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
+                                {pendingApprovals.map(bill => (
+                                    <div key={bill.bill_id} style={{
+                                        background: 'white',
+                                        padding: 'var(--spacing-3)',
+                                        borderRadius: 'var(--radius-md)',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }}>
+                                        <div>
+                                            <p style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)' }}>Bill #{bill.bill_id}</p>
+                                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>{bill.client_name}</p>
+                                            <p style={{ fontSize: 'var(--font-size-xs)', fontWeight: 500 }}>LKR {bill.final_amount}</p>
+                                        </div>
+                                        <button
+                                            className="btn btn-warning btn-sm"
+                                            onClick={() => handleApproveEdit(bill.bill_id)}
+                                            title="Approve Edit Request"
+                                        >
+                                            Approve
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Today's Appointments */}
                 <div className="card">
                     <div style={{
