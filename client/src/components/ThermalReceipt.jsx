@@ -1,5 +1,5 @@
 import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+
 import { format } from 'date-fns';
 
 export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN CRM" }) {
@@ -8,6 +8,17 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN CRM" }) {
     return (
         <div className="thermal-receipt">
             <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                <img
+                    src="/HS_1.png"
+                    alt="Logo"
+                    style={{
+                        width: '50px',
+                        height: '50px',
+                        marginBottom: '5px',
+                        marginTop: '10px',
+                        objectFit: 'contain'
+                    }}
+                />
                 <h2 style={{ margin: 0, fontSize: '14px', textTransform: 'uppercase' }}>{clinicName}</h2>
                 <p style={{ margin: '2px 0', fontSize: '10px' }}>Quality Hair & Skin Care</p>
             </div>
@@ -73,14 +84,6 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN CRM" }) {
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '5px' }}>
-                    <QRCodeSVG
-                        value={`hairskiin://pay?bill=${bill.bill_id}&amount=${bill.final_amount}`}
-                        size={80}
-                        level="M"
-                    />
-                </div>
-                <p style={{ fontSize: '9px', margin: 0 }}>Scan to Pay</p>
                 <p style={{ fontSize: '10px', marginTop: '10px', fontWeight: 'bold' }}>Thank You! Visit Again.</p>
             </div>
         </div>

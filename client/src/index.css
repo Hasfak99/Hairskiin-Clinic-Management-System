@@ -993,8 +993,10 @@ textarea.input {
     page: thermal;
     /* Apply specific page size */
     width: 89mm;
-    height: 78mm;
-    padding: 2mm;
+    /* height: 78mm; removed fixed height to avoid cut off */
+    min-height: 78mm;
+    padding: 5mm;
+    /* Increased padding */
     font-size: 11px;
     margin: 0 auto;
     display: flex;

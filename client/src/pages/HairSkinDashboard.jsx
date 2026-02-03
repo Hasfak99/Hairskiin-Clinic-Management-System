@@ -165,8 +165,8 @@ export default function HairSkinDashboard() {
             {/* Main Content Grid */}
             <div className={`grid grid-cols-${isManager() && pendingApprovals.length > 0 ? '3' : '2'}`} style={{ gap: 'var(--spacing-6)' }}>
 
-                {/* Pending Approvals (Debug Mode: Always Show) */}
-                {true && (
+                {/* Pending Approvals Widget */}
+                {isManager() && pendingApprovals.length > 0 && (
                     <div className="card" style={{ borderColor: 'var(--warning-200)', background: 'var(--warning-50)' }}>
                         <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--warning-700)', marginBottom: 'var(--spacing-4)' }}>
                             ⚠️ Pending Approvals ({pendingApprovals.length})
