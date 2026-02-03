@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Building2 } from 'lucide-react';
-import { branchesAPI } from '../api';
+import { Plus, Edit2, Trash2, Building2, Building } from 'lucide-react';
+import { branchesAPI, departmentsAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 
 export default function Branches() {
     const [branches, setBranches] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedBranch, setSelectedBranch] = useState(null);
@@ -18,38 +19,57 @@ export default function Branches() {
         address: '',
         phone: '',
         email: '',
+        department_id: '',
     });
 
     useEffect(() => {
         if (isAdmin() || isManager()) {
-            fetchBranches();
+            fetchData();
         }
     }, []);
+
+    const fetchData = async () => {
+        try {
+            const [branchesRes, departmentsRes] = await Promise.all([
+                branchesAPI.getAll(),
+                departmentsAPI.getAll()
+            ]);
+            setBranches(branchesRes.data);
+            setDepartments(departmentsRes.data);
+        } catch (error) {
+            toast.error('Failed to fetch data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchBranches = async () => {
         try {
             const response = await branchesAPI.getAll();
             setBranches(response.data);
         } catch (error) {
-            toast.error('Failed to fetch branches');
-        } finally {
-            setLoading(false);
+            console.error(error);
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const payload = {
+                ...formData,
+                department_id: formData.department_id ? parseInt(formData.department_id) : null
+            };
+
             if (selectedBranch) {
-                await branchesAPI.update(selectedBranch.branch_id, formData);
+                await branchesAPI.update(selectedBranch.branch_id, payload);
                 toast.success('Branch updated');
             } else {
-                await branchesAPI.create(formData);
+                await branchesAPI.create(payload);
                 toast.success('Branch created');
             }
             setShowModal(false);
             setSelectedBranch(null);
-            setFormData({ branch_name: '', address: '', phone: '', email: '' });
+            resetForm();
             fetchBranches();
             // Refresh global context branches
             if (refreshBranches) await refreshBranches();
@@ -73,6 +93,7 @@ export default function Branches() {
             address: branch.address || '',
             phone: branch.phone || '',
             email: branch.email || '',
+            department_id: branch.department_id || '',
         });
         setShowModal(true);
     };
@@ -90,6 +111,10 @@ export default function Branches() {
         } catch (error) {
             toast.error(error.response?.data?.detail || 'Failed to delete branch');
         }
+    };
+
+    const resetForm = () => {
+        setFormData({ branch_name: '', address: '', phone: '', email: '', department_id: '' });
     };
 
     const columns = [
@@ -113,6 +138,16 @@ export default function Branches() {
                     )}
                 </div>
             ),
+        },
+        {
+            key: 'department_name',
+            label: 'Department',
+            render: (value) => value ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)', color: 'var(--text-secondary)' }}>
+                    <Building size={14} />
+                    <span>{value}</span>
+                </div>
+            ) : '-'
         },
         { key: 'address', label: 'Address' },
         { key: 'phone', label: 'Phone' },
@@ -153,7 +188,7 @@ export default function Branches() {
                         className="btn btn-primary"
                         onClick={() => {
                             setSelectedBranch(null);
-                            setFormData({ branch_name: '', address: '', phone: '', email: '' });
+                            resetForm();
                             setShowModal(true);
                         }}
                     >
@@ -194,7 +229,7 @@ export default function Branches() {
                 onClose={() => {
                     setShowModal(false);
                     setSelectedBranch(null);
-                    setFormData({ branch_name: '', address: '', phone: '', email: '' });
+                    resetForm();
                 }}
                 title={selectedBranch ? 'Edit Branch' : 'Add Branch'}
             >
@@ -209,6 +244,22 @@ export default function Branches() {
                                 onChange={(e) => setFormData({ ...formData, branch_name: e.target.value })}
                                 required
                             />
+                        </div>
+                        <div>
+                            <label className="label">Department (Company) *</label>
+                            <select
+                                className="input"
+                                value={formData.department_id}
+                                onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
+                                required
+                            >
+                                <option value="">Select Department</option>
+                                {departments.map(dept => (
+                                    <option key={dept.department_id} value={dept.department_id}>
+                                        {dept.department_name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <div>
                             <label className="label">Address</label>
@@ -244,7 +295,7 @@ export default function Branches() {
                                 onClick={() => {
                                     setShowModal(false);
                                     setSelectedBranch(null);
-                                    setFormData({ branch_name: '', address: '', phone: '', email: '' });
+                                    resetForm();
                                 }}
                             >
                                 Cancel

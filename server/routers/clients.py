@@ -250,6 +250,14 @@ async def delete_client(
             status_code=400, 
             detail="Cannot delete client with existing appointments. Archive instead."
         )
+
+    has_bills = db.query(models.Bill)\
+        .filter(models.Bill.client_id == client_id).first()
+    if has_bills:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot delete client with existing bills. Archive instead."
+        )
     
     db.delete(db_client)
     db.commit()

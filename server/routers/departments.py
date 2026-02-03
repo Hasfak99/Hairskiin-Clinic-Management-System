@@ -14,25 +14,21 @@ async def get_departments(
     skip: int = 0,
     limit: int = 100,
     active_only: bool = Query(True, description="Filter active departments only"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    """Get all departments"""
+    """Get all departments with their branches"""
     query = db.query(models.Department)
     
     if active_only:
         query = query.filter(models.Department.is_active == True)
     
-    if branch_id:
-        # Show specific branch departments AND global departments
-        query = query.filter((models.Department.branch_id == branch_id) | (models.Department.branch_id == None))
-    
     departments = query.offset(skip).limit(limit).all()
     result = []
     for dept in departments:
         dept_dict = dept.__dict__.copy()
-        dept_dict['branch_name'] = dept.branch.branch_name if dept.branch else None
+        # Populate branches
+        dept_dict['branches'] = [schemas.BranchSummary(**b.__dict__) for b in dept.branches]
         result.append(schemas.DepartmentResponse(**dept_dict))
     return result
 
@@ -47,8 +43,9 @@ async def get_department(
     dept = db.query(models.Department).filter(models.Department.department_id == department_id).first()
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
+        
     dept_dict = dept.__dict__.copy()
-    dept_dict['branch_name'] = dept.branch.branch_name if dept.branch else None
+    dept_dict['branches'] = [schemas.BranchSummary(**b.__dict__) for b in dept.branches]
     return schemas.DepartmentResponse(**dept_dict)
 
 
@@ -61,15 +58,15 @@ async def create_department(
     """Create new department (Admin/Manager only)"""
     db_dept = models.Department(
         department_name=department.department_name,
-        description=department.description,
-        branch_id=department.branch_id
+        description=department.description
+        # No branch_id
     )
     db.add(db_dept)
     db.commit()
     db.refresh(db_dept)
     
     dept_dict = db_dept.__dict__.copy()
-    dept_dict['branch_name'] = db_dept.branch.branch_name if db_dept.branch else None
+    dept_dict['branches'] = []
     return schemas.DepartmentResponse(**dept_dict)
 
 
@@ -93,7 +90,7 @@ async def update_department(
     db.refresh(db_dept)
     
     dept_dict = db_dept.__dict__.copy()
-    dept_dict['branch_name'] = db_dept.branch.branch_name if db_dept.branch else None
+    dept_dict['branches'] = [schemas.BranchSummary(**b.__dict__) for b in db_dept.branches]
     return schemas.DepartmentResponse(**dept_dict)
 
 

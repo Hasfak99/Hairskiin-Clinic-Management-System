@@ -48,6 +48,7 @@ class BranchBase(BaseModel):
     address: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    department_id: int
 
 
 class BranchCreate(BranchBase):
@@ -60,12 +61,14 @@ class BranchUpdate(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     is_active: Optional[bool] = None
+    department_id: Optional[int] = None
 
 
 class BranchResponse(BranchBase):
     branch_id: int
     is_active: bool
     created_at: datetime
+    department_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -75,7 +78,7 @@ class BranchResponse(BranchBase):
 class DepartmentBase(BaseModel):
     department_name: str = Field(..., min_length=2, max_length=100)
     description: Optional[str] = None
-    branch_id: Optional[int] = None
+    # branch_id removed
 
 
 class DepartmentCreate(DepartmentBase):
@@ -85,15 +88,23 @@ class DepartmentCreate(DepartmentBase):
 class DepartmentUpdate(BaseModel):
     department_name: Optional[str] = None
     description: Optional[str] = None
-    branch_id: Optional[int] = None
+    # branch_id removed
     is_active: Optional[bool] = None
 
+
+class BranchSummary(BaseModel):
+    branch_id: int
+    branch_name: str
+    is_active: bool
+
+    class Config:
+        from_attributes = True
 
 class DepartmentResponse(DepartmentBase):
     department_id: int
     is_active: bool
     created_at: datetime
-    branch_name: Optional[str] = None
+    branches: List[BranchSummary] = []
 
     class Config:
         from_attributes = True

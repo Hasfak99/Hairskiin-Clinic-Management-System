@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Building } from 'lucide-react';
-import { departmentsAPI, branchesAPI } from '../api';
+import { Plus, Edit2, Trash2, Building, MapPin } from 'lucide-react';
+import { departmentsAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
@@ -9,7 +9,6 @@ import { format } from 'date-fns';
 
 export default function Departments() {
     const [departments, setDepartments] = useState([]);
-    const [branches, setBranches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState(null);
@@ -17,7 +16,6 @@ export default function Departments() {
     const [formData, setFormData] = useState({
         department_name: '',
         description: '',
-        branch_id: '',
     });
 
     useEffect(() => {
@@ -28,14 +26,10 @@ export default function Departments() {
 
     const fetchData = async () => {
         try {
-            const [deptRes, branchRes] = await Promise.all([
-                departmentsAPI.getAll(),
-                branchesAPI.getAll()
-            ]);
-            setDepartments(deptRes.data);
-            setBranches(branchRes.data);
+            const response = await departmentsAPI.getAll();
+            setDepartments(response.data);
         } catch (error) {
-            toast.error('Failed to fetch data');
+            toast.error('Failed to fetch departments');
         } finally {
             setLoading(false);
         }
@@ -53,16 +47,11 @@ export default function Departments() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const payload = {
-                ...formData,
-                branch_id: formData.branch_id ? parseInt(formData.branch_id) : null
-            };
-
             if (selectedDepartment) {
-                await departmentsAPI.update(selectedDepartment.department_id, payload);
+                await departmentsAPI.update(selectedDepartment.department_id, formData);
                 toast.success('Department updated');
             } else {
-                await departmentsAPI.create(payload);
+                await departmentsAPI.create(formData);
                 toast.success('Department created');
             }
             setShowModal(false);
@@ -86,7 +75,6 @@ export default function Departments() {
         setFormData({
             department_name: dept.department_name || '',
             description: dept.description || '',
-            branch_id: dept.branch_id || '',
         });
         setShowModal(true);
     };
@@ -106,7 +94,7 @@ export default function Departments() {
 
     const resetForm = () => {
         setSelectedDepartment(null);
-        setFormData({ department_name: '', description: '', branch_id: '' });
+        setFormData({ department_name: '', description: '' });
     };
 
     const columns = [
@@ -132,7 +120,36 @@ export default function Departments() {
             ),
         },
         { key: 'description', label: 'Description' },
-        { key: 'branch_name', label: 'Branch' },
+        {
+            key: 'branches',
+            label: 'Branches',
+            render: (branches) => (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {branches && branches.length > 0 ? (
+                        branches.map(branch => (
+                            <span
+                                key={branch.branch_id}
+                                style={{
+                                    fontSize: 'var(--font-size-xs)',
+                                    padding: '2px 6px',
+                                    background: 'var(--surface-elevated)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    border: '1px solid var(--border-color)'
+                                }}
+                            >
+                                <MapPin size={10} />
+                                {branch.branch_name}
+                            </span>
+                        ))
+                    ) : (
+                        <span style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)' }}>No branches</span>
+                    )}
+                </div>
+            )
+        },
         {
             key: 'created_at',
             label: 'Created',
@@ -161,7 +178,7 @@ export default function Departments() {
                         Departments
                     </h1>
                     <p style={{ color: 'var(--text-muted)' }}>
-                        Manage clinic departments and units
+                        Manage clinic departments (Companies)
                     </p>
                 </div>
                 <button
@@ -218,22 +235,8 @@ export default function Departments() {
                                 value={formData.department_name}
                                 onChange={(e) => setFormData({ ...formData, department_name: e.target.value })}
                                 required
+                                placeholder="e.g. Hair Skin Clinic"
                             />
-                        </div>
-                        <div>
-                            <label className="label">Branch</label>
-                            <select
-                                className="input"
-                                value={formData.branch_id}
-                                onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
-                            >
-                                <option value="">Select Branch</option>
-                                {branches.map(branch => (
-                                    <option key={branch.branch_id} value={branch.branch_id}>
-                                        {branch.branch_name}
-                                    </option>
-                                ))}
-                            </select>
                         </div>
                         <div>
                             <label className="label">Description</label>

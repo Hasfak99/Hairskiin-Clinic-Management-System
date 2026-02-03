@@ -52,7 +52,9 @@ class Branch(Base):
     products = relationship("Product", back_populates="branch")
     treatments = relationship("Treatment", back_populates="branch")
     expenses = relationship("Expense", back_populates="branch")
-    departments = relationship("Department", back_populates="branch")
+    departments = relationship("Department", back_populates="branches")  # REMOVED
+    department_id = Column(Integer, ForeignKey("departments.department_id"), nullable=False, index=True)
+    department = relationship("Department", back_populates="branches")
 
 
 # ==================== DEPARTMENTS ====================
@@ -62,13 +64,13 @@ class Department(Base):
     department_id = Column(Integer, primary_key=True, index=True)
     department_name = Column(String(100), nullable=False, index=True)
     description = Column(Text, nullable=True)
-    branch_id = Column(Integer, ForeignKey("branches.branch_id"), nullable=True, index=True)
+    # branch_id removed - Department is now the parent
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    branch = relationship("Branch", back_populates="departments")
+    branches = relationship("Branch", back_populates="department")
     users = relationship("User", back_populates="department")
     products = relationship("Product", back_populates="department")
     clients = relationship("Client", back_populates="department")
