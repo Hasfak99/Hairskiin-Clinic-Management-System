@@ -135,6 +135,21 @@ export default function Users() {
         }
     };
 
+    const handleDelete = async (user) => {
+        if (!window.confirm(`Are you sure you want to delete user "${user.username}"? This will deactivate their account.`)) {
+            return;
+        }
+        try {
+            await usersAPI.delete(user.user_id);
+            toast.success('User deactivated successfully');
+            fetchUsers();
+        } catch (error) {
+            console.error('Delete error:', error);
+            const detail = error.response?.data?.detail;
+            toast.error(typeof detail === 'string' ? detail : 'Failed to delete user');
+        }
+    };
+
     const openEditModal = (user) => {
         setSelectedUser(user);
         setFormData({
@@ -150,7 +165,16 @@ export default function Users() {
 
     const resetForm = () => {
         setSelectedUser(null);
-        setFormData({ username: '', password: '', full_name: '', role: 'receptionist', branch_id: null, department_id: null });
+        // Auto-fill branch/dept for restricted users
+        const restricted = currentUser?.role !== 'super_admin' && currentUser?.role !== 'director';
+        setFormData({
+            username: '',
+            password: '',
+            full_name: '',
+            role: 'receptionist',
+            branch_id: restricted ? currentUser?.branch_id : null,
+            department_id: restricted ? currentUser?.department_id : null
+        });
     };
 
     const roleColors = {
@@ -276,32 +300,70 @@ export default function Users() {
                     totalItems: pagination.total,
                     onPageChange: (page) => setPagination(prev => ({ ...prev, page }))
                 }}
-                actions={(row) => row.user_id !== currentUser?.user_id && (
-                    <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
-                        <button
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => { setSelectedUser(row); setShowPasswordModal(true); }}
-                            title="Reset Password"
-                        >
-                            <Key size={16} />
-                        </button>
-                        <button
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => openEditModal(row)}
-                            title="Edit"
-                        >
-                            <Edit2 size={16} />
-                        </button>
-                        <button
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => handleStatusToggle(row)}
-                            title={row.status === 'active' ? 'Deactivate' : 'Activate'}
-                            style={{ color: row.status === 'active' ? 'var(--error-500)' : 'var(--success-500)' }}
-                        >
-                            {row.status === 'active' ? 'Deactivate' : 'Activate'}
-                        </button>
-                    </div>
-                )}
+                actions={(row) => {
+                    // Permission Check
+                    const isSelf = row.user_id === currentUser?.user_id;
+                    if (isSelf) return null;
+
+                    const roleHierarchy = {
+                        super_admin: 100,
+                        director: 90,
+                        admin: 80,
+                        manager: 50,
+                        receptionist: 10,
+                        doctor: 10,
+                        cashier: 10,
+                    };
+
+                    const currentRank = roleHierarchy[currentUser?.role] || 0;
+                    const targetRank = roleHierarchy[row.role] || 0;
+
+                    // Cannot manage equal or higher rank (unless super_admin)
+                    if (currentUser?.role !== 'super_admin' && targetRank >= currentRank) {
+                        return null;
+                    }
+
+                    // Strict Isolation Check
+                    if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') {
+                        if (currentUser?.branch_id && row.branch_id !== currentUser?.branch_id) return null;
+                        if (currentUser?.department_id && row.department_id !== currentUser?.department_id) return null;
+                    }
+
+                    return (
+                        <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => { setSelectedUser(row); setShowPasswordModal(true); }}
+                                title="Reset Password"
+                            >
+                                <Key size={16} />
+                            </button>
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => openEditModal(row)}
+                                title="Edit"
+                            >
+                                <Edit2 size={16} />
+                            </button>
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => handleDelete(row)}
+                                title="Delete User"
+                                style={{ color: 'var(--error-500)' }}
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                            <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => handleStatusToggle(row)}
+                                title={row.status === 'active' ? 'Deactivate' : 'Activate'}
+                                style={{ color: row.status === 'active' ? 'var(--text-muted)' : 'var(--success-500)' }}
+                            >
+                                {row.status === 'active' ? 'Disable' : 'Enable'}
+                            </button>
+                        </div>
+                    );
+                }}
             />
 
             {/* Add/Edit User Modal */}
@@ -381,6 +443,11 @@ export default function Users() {
                             className="input"
                             value={formData.branch_id || ''}
                             onChange={(e) => setFormData({ ...formData, branch_id: e.target.value ? parseInt(e.target.value) : null })}
+                            disabled={currentUser?.role !== 'super_admin' && currentUser?.role !== 'director'}
+                            style={{
+                                backgroundColor: (currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') ? 'var(--surface-muted)' : 'white',
+                                opacity: (currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') ? 0.8 : 1
+                            }}
                         >
                             <option value="">No Branch (Admin)</option>
                             {(branches || []).map(branch => (
@@ -397,6 +464,11 @@ export default function Users() {
                             className="input"
                             value={formData.department_id || ''}
                             onChange={(e) => setFormData({ ...formData, department_id: e.target.value ? parseInt(e.target.value) : null })}
+                            disabled={currentUser?.role !== 'super_admin' && currentUser?.role !== 'director'}
+                            style={{
+                                backgroundColor: (currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') ? 'var(--surface-muted)' : 'white',
+                                opacity: (currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') ? 0.8 : 1
+                            }}
                         >
                             <option value="">No Department</option>
                             {(departments || []).map(dept => (

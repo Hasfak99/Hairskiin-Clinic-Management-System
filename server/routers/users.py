@@ -135,6 +135,31 @@ async def create_user(
     return db_user
 
 
+# Role Hierarchy
+ROLE_HIERARCHY = {
+    models.UserRole.super_admin: 100,
+    models.UserRole.director: 90,
+    models.UserRole.admin: 80,
+    models.UserRole.manager: 50,
+    models.UserRole.receptionist: 10,
+    models.UserRole.doctor: 10,
+    models.UserRole.cashier: 10,
+}
+
+def check_role_hierarchy(current_user: models.User, target_user: models.User):
+    """Ensure current_user has higher rank than target_user"""
+    if current_user.role == models.UserRole.super_admin:
+        return # Super Admin can do anything
+        
+    current_rank = ROLE_HIERARCHY.get(current_user.role, 0)
+    target_rank = ROLE_HIERARCHY.get(target_user.role, 0)
+    
+    if target_rank >= current_rank:
+        raise HTTPException(
+            status_code=403, 
+            detail="Insufficient permissions to manage a user with equal or higher role"
+        )
+
 @router.put("/{user_id}", response_model=schemas.UserResponse)
 async def update_user(
     user_id: int,
@@ -147,8 +172,26 @@ async def update_user(
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    # HIERARCHY CHECK
+    check_role_hierarchy(current_user, db_user)
+
+    # STRICT ISOLATION: Check if admin has permission to update this user
+    if current_user.role != models.UserRole.super_admin:
+        if current_user.branch_id and db_user.branch_id != current_user.branch_id:
+            raise HTTPException(status_code=403, detail="Cannot manage users from other branches")
+        
+        if current_user.department_id and db_user.department_id != current_user.department_id:
+            if current_user.role != 'director' and db_user.department_id != current_user.department_id:
+                 raise HTTPException(status_code=403, detail="Cannot manage users from other departments")
+
     update_data = user_update.model_dump(exclude_unset=True)
     if "role" in update_data:
+        # Check if trying to promote to higher rank
+        new_role_rank = ROLE_HIERARCHY.get(update_data["role"], 0)
+        current_rank = ROLE_HIERARCHY.get(current_user.role, 0)
+        if new_role_rank >= current_rank and current_user.role != models.UserRole.super_admin:
+             raise HTTPException(status_code=403, detail="Cannot promote user to equal or higher rank")
+
         update_data["role"] = update_data["role"].value
     if "status" in update_data:
         update_data["status"] = update_data["status"].value
@@ -172,6 +215,17 @@ async def delete_user(
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    # HIERARCHY CHECK
+    check_role_hierarchy(current_user, db_user)
+    
+    # STRICT ISOLATION
+    if current_user.role != models.UserRole.super_admin:
+        if current_user.branch_id and db_user.branch_id != current_user.branch_id:
+            raise HTTPException(status_code=403, detail="Cannot delete users from other branches")
+        
+        if current_user.role != 'director' and current_user.department_id and db_user.department_id != current_user.department_id:
+             raise HTTPException(status_code=403, detail="Cannot delete users from other departments")
+
     if db_user.user_id == current_user.user_id:
         raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
     
@@ -192,6 +246,14 @@ async def reset_password(
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    # STRICT ISOLATION
+    if current_user.role != models.UserRole.super_admin:
+        if current_user.branch_id and db_user.branch_id != current_user.branch_id:
+            raise HTTPException(status_code=403, detail="Cannot manage users from other branches")
+        
+        if current_user.role != 'director' and current_user.department_id and db_user.department_id != current_user.department_id:
+             raise HTTPException(status_code=403, detail="Cannot manage users from other departments")
+
     db_user.password_hash = get_password_hash(new_password)
     db.commit()
     return {"message": "Password reset successfully"}
