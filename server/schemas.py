@@ -362,6 +362,7 @@ class AppointmentResponse(AppointmentBase):
     treatment_name: Optional[str] = None
     treatment_price: Optional[float] = None
     department_name: Optional[str] = None
+    branch_name: Optional[str] = None  # NEW
     stylist_name: Optional[str] = None  # NEW  # NEW
 
     class Config:
@@ -425,6 +426,7 @@ class BillResponse(BillBase):
     edit_request_status: Optional[str] = "none"  # NEW
     client_name: Optional[str] = None
     department_name: Optional[str] = None  # NEW
+    branch_name: Optional[str] = None  # NEW
 
     class Config:
         from_attributes = True

@@ -118,7 +118,11 @@ async def get_product(
     product = db.query(models.Product).filter(models.Product.product_id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    return product
+        
+    p_dict = product.__dict__.copy()
+    p_dict['branch_name'] = product.branch.branch_name if product.branch else None
+    p_dict['department_name'] = product.department.department_name if product.department else None
+    return schemas.ProductResponse(**p_dict)
 
 
 @router.post("/", response_model=schemas.ProductResponse, status_code=status.HTTP_201_CREATED)
@@ -160,7 +164,11 @@ async def create_product(
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
-    return db_product
+    
+    p_dict = db_product.__dict__.copy()
+    p_dict['branch_name'] = db_product.branch.branch_name if db_product.branch else None
+    p_dict['department_name'] = db_product.department.department_name if db_product.department else None
+    return schemas.ProductResponse(**p_dict)
 
 
 @router.put("/{product_id}", response_model=schemas.ProductResponse)
@@ -190,7 +198,11 @@ async def update_product(
     
     db.commit()
     db.refresh(db_product)
-    return db_product
+    
+    p_dict = db_product.__dict__.copy()
+    p_dict['branch_name'] = db_product.branch.branch_name if db_product.branch else None
+    p_dict['department_name'] = db_product.department.department_name if db_product.department else None
+    return schemas.ProductResponse(**p_dict)
 
 
 @router.patch("/{product_id}/stock")

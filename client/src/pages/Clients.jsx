@@ -231,6 +231,16 @@ export default function Clients() {
             ),
         },
         {
+            key: 'department_name',
+            label: 'Department',
+            render: (val) => val || '-'
+        },
+        {
+            key: 'branch_name',
+            label: 'Branch',
+            render: (val) => val || '-'
+        },
+        {
             key: 'email',
             label: 'Email',
             render: (val) => val ? (

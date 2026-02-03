@@ -357,6 +357,11 @@ export default function Billing() {
             label: 'Department',
             render: (val) => val || '-'
         },
+        {
+            key: 'branch_name',
+            label: 'Branch',
+            render: (val) => val || '-'
+        },
         // REMOVED Stylist column
         {
             key: 'final_amount',

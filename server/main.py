@@ -15,7 +15,7 @@ from auth import (
 )
 
 # Import routers
-from routers import users, clients, treatments, products, appointments, bills, analytics, search, branches, departments
+from routers import users, clients, treatments, products, appointments, bills, analytics, search, branches, departments, backup
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -124,6 +124,7 @@ app.include_router(appointments.router, prefix="/api")
 app.include_router(bills.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(search.router, prefix="/api")
+app.include_router(backup.router, prefix="/api")
 
 
 # ==================== HEALTH CHECK ====================

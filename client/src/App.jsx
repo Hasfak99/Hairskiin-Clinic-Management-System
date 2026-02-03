@@ -23,6 +23,7 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorHistory from './pages/DoctorHistory';
 import ProvideTreatment from './pages/ProvideTreatment';
+import BackupRestore from './pages/BackupRestore';
 
 // Protected Route wrapper
 function ProtectedRoute({ children }) {
@@ -205,6 +206,15 @@ function App() {
                 <ProtectedRoute>
                     <MainLayout>
                         <Departments />
+                    </MainLayout>
+                </ProtectedRoute>
+            } />
+
+            {/* Protected Routes */}
+            <Route path="/settings/backup" element={
+                <ProtectedRoute>
+                    <MainLayout>
+                        <BackupRestore />
                     </MainLayout>
                 </ProtectedRoute>
             } />

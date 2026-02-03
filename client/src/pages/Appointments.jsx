@@ -228,6 +228,11 @@ export default function Appointments() {
             render: (val) => val || '-'
         },
         {
+            key: 'branch_name',
+            label: 'Branch',
+            render: (val) => val || '-'
+        },
+        {
             key: 'appointment_date',
             label: 'Date',
             render: (val) => (

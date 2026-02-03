@@ -62,6 +62,7 @@ async def get_appointments(
         apt_dict['treatment_name'] = apt.treatment.treatment_name if apt.treatment else None
         apt_dict['treatment_price'] = apt.treatment.price if apt.treatment else None
         apt_dict['department_name'] = apt.department.department_name if apt.department else None
+        apt_dict['branch_name'] = apt.branch.branch_name if apt.branch else None
         # Provide stylist name (prefer full_name, fallback to username)
         apt_dict['stylist_name'] = (apt.stylist.full_name or apt.stylist.username) if apt.stylist else "Unassigned"
         items.append(schemas.AppointmentResponse(**apt_dict))
@@ -94,6 +95,7 @@ async def get_today_appointments(
         apt_dict['treatment_name'] = apt.treatment.treatment_name if apt.treatment else None
         apt_dict['treatment_price'] = apt.treatment.price if apt.treatment else None
         apt_dict['department_name'] = apt.department.department_name if apt.department else None
+        apt_dict['branch_name'] = apt.branch.branch_name if apt.branch else None
         result.append(schemas.AppointmentResponse(**apt_dict))
     
     return result
@@ -123,6 +125,7 @@ async def get_upcoming_appointments(
         apt_dict['treatment_name'] = apt.treatment.treatment_name if apt.treatment else None
         apt_dict['treatment_price'] = apt.treatment.price if apt.treatment else None
         apt_dict['department_name'] = apt.department.department_name if apt.department else None
+        apt_dict['branch_name'] = apt.branch.branch_name if apt.branch else None
         result.append(schemas.AppointmentResponse(**apt_dict))
     
     return result
@@ -196,6 +199,7 @@ async def get_appointment(
     apt_dict['treatment_name'] = apt.treatment.treatment_name if apt.treatment else None
     apt_dict['treatment_price'] = apt.treatment.price if apt.treatment else None
     apt_dict['department_name'] = apt.department.department_name if apt.department else None
+    apt_dict['branch_name'] = apt.branch.branch_name if apt.branch else None
     
     return schemas.AppointmentResponse(**apt_dict)
 
@@ -220,6 +224,10 @@ async def create_appointment(
     # Auto-assign stylist_id if the creator is a doctor (BEFORE conflict check)
     if appointment.stylist_id is None and current_user.role == models.UserRole.doctor:
         appointment.stylist_id = current_user.user_id
+
+    # Auto-assign department_id from treatment if not provided
+    if not appointment.department_id and treatment.department_id:
+        appointment.department_id = treatment.department_id
 
     # Check for conflicting appointments
     # Scope to the specific stylist if one is assigned
@@ -262,6 +270,7 @@ async def create_appointment(
     apt_dict['treatment_name'] = treatment.treatment_name
     apt_dict['treatment_price'] = treatment.price
     apt_dict['department_name'] = db_appointment.department.department_name if db_appointment.department else None
+    apt_dict['branch_name'] = db_appointment.branch.branch_name if db_appointment.branch else None
     
     return schemas.AppointmentResponse(**apt_dict)
 
@@ -294,6 +303,7 @@ async def update_appointment(
     apt_dict['treatment_name'] = db_apt.treatment.treatment_name if db_apt.treatment else None
     apt_dict['treatment_price'] = db_apt.treatment.price if db_apt.treatment else None
     apt_dict['department_name'] = db_apt.department.department_name if db_apt.department else None
+    apt_dict['branch_name'] = db_apt.branch.branch_name if db_apt.branch else None
     
     return schemas.AppointmentResponse(**apt_dict)
 
@@ -399,6 +409,7 @@ async def create_walkin_appointment(
     apt_dict['treatment_name'] = treatment.treatment_name
     apt_dict['treatment_price'] = treatment.price
     apt_dict['department_name'] = db_appointment.department.department_name if db_appointment.department else None
+    apt_dict['branch_name'] = db_appointment.branch.branch_name if db_appointment.branch else None
     
     return schemas.AppointmentResponse(**apt_dict)
 

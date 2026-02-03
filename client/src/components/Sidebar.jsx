@@ -34,6 +34,7 @@ const navItems = [
     { path: '/branches', icon: Building2, label: 'Branches', roles: ['admin', 'manager', 'director', 'super_admin'] },
     { path: '/departments', icon: Building2, label: 'Departments', roles: ['admin', 'director', 'super_admin'] },
     { path: '/users', icon: Settings, label: 'Users', roles: ['admin', 'director', 'super_admin'] },
+    { path: '/settings/backup', icon: Shield, label: 'Backup', roles: ['admin', 'super_admin'] },
 ];
 
 export default function Sidebar() {

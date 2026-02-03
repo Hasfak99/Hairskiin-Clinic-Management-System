@@ -48,6 +48,8 @@ async def get_bills(
         bill_dict = bill.__dict__.copy()
         bill_dict['client_name'] = bill.client.name if bill.client else None
         bill_dict['details'] = [schemas.BillDetailResponse(**d.__dict__) for d in bill.details]
+        bill_dict['department_name'] = bill.department.department_name if bill.department else None
+        bill_dict['branch_name'] = bill.branch.branch_name if bill.branch else None
         bill_dict['edit_request_status'] = bill.edit_request_status  # Explicit access
         items.append(schemas.BillResponse(**bill_dict))
     
@@ -99,6 +101,8 @@ async def get_bill(
     bill_dict = bill.__dict__.copy()
     bill_dict['client_name'] = bill.client.name if bill.client else None
     bill_dict['details'] = [schemas.BillDetailResponse(**d.__dict__) for d in bill.details]
+    bill_dict['department_name'] = bill.department.department_name if bill.department else None
+    bill_dict['branch_name'] = bill.branch.branch_name if bill.branch else None
     bill_dict['edit_request_status'] = bill.edit_request_status  # Explicit access
     
     return schemas.BillResponse(**bill_dict)
@@ -159,6 +163,7 @@ async def create_bill(
         client_id=bill.client_id,
         appointment_id=bill.appointment_id,
         branch_id=bill.branch_id,
+        department_id=bill.department_id,
         total_amount=total_amount,
         discount=bill.discount,
         tax=bill.tax,
@@ -181,6 +186,8 @@ async def create_bill(
     bill_dict = db_bill.__dict__.copy()
     bill_dict['client_name'] = client.name
     bill_dict['details'] = [schemas.BillDetailResponse(**d.__dict__) for d in db_bill.details]
+    bill_dict['department_name'] = db_bill.department.department_name if db_bill.department else None
+    bill_dict['branch_name'] = db_bill.branch.branch_name if db_bill.branch else None
     
     return schemas.BillResponse(**bill_dict)
 
@@ -219,6 +226,8 @@ async def update_bill(
     bill_dict = db_bill.__dict__.copy()
     bill_dict['client_name'] = db_bill.client.name if db_bill.client else None
     bill_dict['details'] = [schemas.BillDetailResponse(**d.__dict__) for d in db_bill.details]
+    bill_dict['department_name'] = db_bill.department.department_name if db_bill.department else None
+    bill_dict['branch_name'] = db_bill.branch.branch_name if db_bill.branch else None
     
     return schemas.BillResponse(**bill_dict)
 

@@ -184,26 +184,51 @@ def get_analytics_dashboard(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Match frontend: total_revenue, net_profit, completed_appointments, cancelled_appointments
-    total_revenue = db.query(func.sum(Bill.final_amount)).scalar() or 0.0
+    # Base queries
+    bill_query = db.query(Bill)
+    client_query = db.query(Client)
+    appt_query = db.query(Appointment)
+    product_query = db.query(models.Product)
+
+    # Filter by Branch for non-Super Admins (or if user has branch_id)
+    # Even Admins are usually branch-specific in this context if they are assigned to one.
+    if current_user.branch_id:
+        bill_query = bill_query.filter(Bill.branch_id == current_user.branch_id)
+        client_query = client_query.filter(Client.branch_id == current_user.branch_id)
+        appt_query = appt_query.filter(Appointment.branch_id == current_user.branch_id)
+        product_query = product_query.filter(models.Product.branch_id == current_user.branch_id)
+
+    # 1. Revenue
+    total_revenue = bill_query.with_entities(func.sum(Bill.final_amount)).scalar() or 0.0
     
-    # Mock expenses logic for net_profit
+    # Mock expenses logic for net_profit (can be updated to use Expense model later)
     total_expenses = total_revenue * 0.4 
     net_profit = total_revenue - total_expenses
     
-    completed_appointments = db.query(func.count(Appointment.appointment_id)).filter(
-        Appointment.status == 'completed'
-    ).scalar()
+    # 2. Appointments
+    total_appointments = appt_query.count()
+    completed_appointments = appt_query.filter(Appointment.status == 'completed').count()
+    cancelled_appointments = appt_query.filter(Appointment.status == 'cancelled').count()
+
+    # 3. Clients
+    total_clients = client_query.count()
     
-    cancelled_appointments = db.query(func.count(Appointment.appointment_id)).filter(
-        Appointment.status == 'cancelled'
-    ).scalar()
+    today = date.today()
+    first_of_month = today.replace(day=1)
+    new_clients_this_month = client_query.filter(Client.created_at >= first_of_month).count()
+
+    # 4. Low Stock
+    low_stock_products = product_query.filter(models.Product.stock_qty <= models.Product.min_stock).count()
 
     return {
         "total_revenue": total_revenue,
         "net_profit": net_profit, 
+        "total_appointments": total_appointments,
         "completed_appointments": completed_appointments,
-        "cancelled_appointments": cancelled_appointments
+        "cancelled_appointments": cancelled_appointments,
+        "total_clients": total_clients,
+        "new_clients_this_month": new_clients_this_month,
+        "low_stock_products": low_stock_products
     }
 
 @router.get("/revenue")

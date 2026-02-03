@@ -188,6 +188,16 @@ export default function Products() {
                 </div>
             ),
         },
+        {
+            key: 'department_name',
+            label: 'Department',
+            render: (val) => val || '-'
+        },
+        {
+            key: 'branch_name',
+            label: 'Branch',
+            render: (val) => val || '-'
+        },
         { key: 'category', label: 'Category', render: (val) => val || '-' },
         { key: 'size', label: 'Size', render: (val) => val || '-' },
         {
