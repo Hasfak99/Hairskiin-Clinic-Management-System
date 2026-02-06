@@ -12,7 +12,7 @@ export default function Departments() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState(null);
-    const { isAdmin } = useAuth();
+    const { isAdmin, user } = useAuth(); // Get user for department check
     const [formData, setFormData] = useState({
         department_name: '',
         description: '',
@@ -24,10 +24,20 @@ export default function Departments() {
         }
     }, []);
 
+    const filterDepartments = (allDepts) => {
+        if (user?.role === 'super_admin' || user?.role === 'director') {
+            return allDepts;
+        }
+        if (user?.department_id) {
+            return allDepts.filter(d => d.department_id === user.department_id);
+        }
+        return allDepts; // Fallback (or empty if strict)
+    };
+
     const fetchData = async () => {
         try {
             const response = await departmentsAPI.getAll();
-            setDepartments(response.data);
+            setDepartments(filterDepartments(response.data));
         } catch (error) {
             toast.error('Failed to fetch departments');
         } finally {
@@ -38,7 +48,7 @@ export default function Departments() {
     const fetchDepartments = async () => {
         try {
             const response = await departmentsAPI.getAll();
-            setDepartments(response.data);
+            setDepartments(filterDepartments(response.data));
         } catch (error) {
             console.error(error);
         }

@@ -17,6 +17,7 @@ async def get_users(
     page: int = 1,
     size: int = 20,
     branch_id: Optional[int] = Query(None, description="Filter by branch"),
+    department_id: Optional[int] = Query(None, description="Filter by department"),
     role: Optional[str] = Query(None, description="Filter by role"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
@@ -30,16 +31,32 @@ async def get_users(
     if role:
         query = query.filter(models.User.role == role)
     
-    # Director Restriction: Can only view users in their department
+    # -------------------------------------------------------
+    # STRICT ISOLATION LOGIC
+    # -------------------------------------------------------
+    
+    # 1. Director: Can see all, or restricted to their Dept if set
     if current_user.role == 'director':
         if current_user.department_id:
             query = query.filter(models.User.department_id == current_user.department_id)
-        else:
-            # If Director has no department assigned, they shouldn't see other departments' users.
-            # Returning empty list or users with no department (safe default)
-            # Choosing to show NOTHING to signal configuration error rather than leaking data.
-            query = query.filter(models.User.department_id == -1)
-    
+        # If no department_id, Director sees all departments (per current logic)
+
+    # 2. Other Admins/Managers (Not Super Admin)
+    # MUST be restricted to their own department if they have one
+    elif current_user.role != models.UserRole.super_admin:
+        if current_user.department_id:
+            # Force filter to current user's department
+            query = query.filter(models.User.department_id == current_user.department_id)
+        
+        # If user explicitly requested a department (and passed the security check above)
+        elif department_id:
+             query = query.filter(models.User.department_id == department_id)
+             
+    # 3. Super Admin: Respects the requested filter
+    elif department_id:
+        query = query.filter(models.User.department_id == department_id)
+
+
     # Get total count
     total = query.count()
     

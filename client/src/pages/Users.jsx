@@ -48,9 +48,23 @@ export default function Users() {
                 size: pagination.size
             };
 
-            // For Director, explicitly allow fetching users from ALL branches (in their department)
-            // Passing null bypasses the API interceptor's auto-branch-injection
+            // STRICT ISOLATION:
+            // 1. Director/Super Admin -> Can see all (Director sees all for now based on previous requests)
+            // 2. Others -> Must filter by their department
+
             console.log('Current User Role:', currentUser?.role);
+
+            // If NOT super_admin/director, enforce department filter
+            if (currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') {
+                if (currentUser?.department_id) {
+                    params.department_id = currentUser.department_id;
+                }
+                // Branch filter is already handled by axios interceptor/backend usually, 
+                // but we can be explicit if needed. 
+                // For now, let's assume department isolation is the priority request.
+            }
+
+            // For Director, explicitly allow fetching users from ALL branches/departments
             if (currentUser?.role === 'director') {
                 params.branch_id = null;
             }
