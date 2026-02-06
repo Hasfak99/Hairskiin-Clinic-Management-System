@@ -13,7 +13,7 @@ export default function Branches() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedBranch, setSelectedBranch] = useState(null);
-    const { isAdmin, isManager, refreshBranches } = useAuth();
+    const { user: currentUser, isAdmin, isManager, refreshBranches } = useAuth();
     const [formData, setFormData] = useState({
         branch_name: '',
         address: '',
@@ -26,12 +26,18 @@ export default function Branches() {
         if (isAdmin() || isManager()) {
             fetchData();
         }
-    }, []);
+    }, [currentUser]);
 
     const fetchData = async () => {
         try {
+            const params = {};
+            // Filter by department for non-Super Admins (Director/Admin/Manager)
+            if (currentUser?.role !== 'super_admin' && currentUser?.department_id) {
+                params.department_id = currentUser.department_id;
+            }
+
             const [branchesRes, departmentsRes] = await Promise.all([
-                branchesAPI.getAll(),
+                branchesAPI.getAll(params),
                 departmentsAPI.getAll()
             ]);
             setBranches(branchesRes.data);
@@ -45,7 +51,11 @@ export default function Branches() {
 
     const fetchBranches = async () => {
         try {
-            const response = await branchesAPI.getAll();
+            const params = {};
+            if (currentUser?.role !== 'super_admin' && currentUser?.department_id) {
+                params.department_id = currentUser.department_id;
+            }
+            const response = await branchesAPI.getAll(params);
             setBranches(response.data);
         } catch (error) {
             console.error(error);

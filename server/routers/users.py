@@ -67,7 +67,16 @@ async def get_users(
     items = []
     for user in users:
         user_dict = user.__dict__.copy()
-        user_dict['branch_name'] = user.branch.branch_name if user.branch else None
+        
+        # Handle Branch Name Display
+        if user.branch:
+            user_dict['branch_name'] = user.branch.branch_name
+        elif user.department_id:
+             # If user is in a department but has no branch (e.g. Director/Admin), show "All Branches"
+             user_dict['branch_name'] = "All Branches"
+        else:
+            user_dict['branch_name'] = None
+
         user_dict['department_name'] = user.department.department_name if user.department else None
         items.append(schemas.UserResponse(**user_dict))
     
@@ -87,7 +96,14 @@ async def get_current_user_info(
 ):
     """Get current logged-in user details"""
     user_dict = current_user.__dict__.copy()
-    user_dict['branch_name'] = current_user.branch.branch_name if current_user.branch else None
+    
+    if current_user.branch:
+        user_dict['branch_name'] = current_user.branch.branch_name
+    elif current_user.department_id:
+        user_dict['branch_name'] = "All Branches"
+    else:
+        user_dict['branch_name'] = None
+        
     user_dict['department_name'] = current_user.department.department_name if current_user.department else None
     return schemas.UserResponse(**user_dict)
 
@@ -136,6 +152,18 @@ async def create_user(
             pass
             
     user_code = f"{prefix}{next_seq:03d}"
+
+    # STRICT ISOLATION: Enforce Department
+    if current_user.role != models.UserRole.super_admin:
+        if current_user.department_id:
+            # Force new user to be in the creator's department
+            user.department_id = current_user.department_id
+    
+    # Auto-infer department from branch if still missing (e.g. Super Admin creates user with branch but no dept)
+    if user.branch_id and not user.department_id:
+        branch = db.query(models.Branch).filter(models.Branch.branch_id == user.branch_id).first()
+        if branch:
+            user.department_id = branch.department_id
 
     db_user = models.User(
         username=user.username,

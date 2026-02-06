@@ -15,7 +15,9 @@ export default function Users() {
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [newPassword, setNewPassword] = useState('');
-    const { user: currentUser, isAdmin, branches } = useAuth();
+    const { user: currentUser, isAdmin } = useAuth(); // Removed branches from useAuth
+    const [availableBranches, setAvailableBranches] = useState([]); // Local state for branches
+
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -36,10 +38,23 @@ export default function Users() {
         if (currentUser && (['admin', 'super_admin', 'director'].includes(currentUser.role))) {
             fetchUsers();
             fetchDepartments();
+            fetchBranchesForDropdown();
         } else {
             setLoading(false);
         }
     }, [currentUser, pagination.page, currentUser?.role]);
+
+    const fetchBranchesForDropdown = async () => {
+        try {
+            // Fetch active branches for the dropdown
+            // Strict isolation handled by backend based on currentUser
+            const response = await import('../api').then(module => module.branchesAPI.getAll({ active_only: true }));
+            console.log("Fetched branches for dropdown:", response.data);
+            setAvailableBranches(response.data);
+        } catch (error) {
+            console.error('Failed to fetch branches:', error);
+        }
+    };
 
     const fetchUsers = async () => {
         try {
@@ -179,15 +194,17 @@ export default function Users() {
 
     const resetForm = () => {
         setSelectedUser(null);
-        // Auto-fill branch/dept for restricted users
-        const restricted = currentUser?.role !== 'super_admin' && currentUser?.role !== 'director';
+        // Auto-fill branch/dept for restricted users (AND Directors who have a department)
+        // Directors are not "restricted" in the sense of seeing the modal, but should default to their department
+        const shouldPreFill = currentUser?.role !== 'super_admin';
+
         setFormData({
             username: '',
             password: '',
             full_name: '',
             role: 'receptionist',
-            branch_id: restricted ? currentUser?.branch_id : null,
-            department_id: restricted ? currentUser?.department_id : null
+            branch_id: (currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') ? currentUser?.branch_id : null,
+            department_id: shouldPreFill ? currentUser?.department_id : null
         });
     };
 
@@ -245,7 +262,7 @@ export default function Users() {
             label: 'Branch',
             render: (val, row) => (
                 <span>
-                    {branches.find(b => b.branch_id === row.branch_id)?.branch_name || '-'}
+                    {val || '-'}
                 </span>
             ),
         },
@@ -254,7 +271,7 @@ export default function Users() {
             label: 'Department',
             render: (val, row) => (
                 <span>
-                    {departments.find(d => d.department_id === row.department_id)?.department_name || '-'}
+                    {val || '-'}
                 </span>
             ),
         },
@@ -441,13 +458,11 @@ export default function Users() {
                             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                             required
                         >
-                            <option value="super_admin">Super Admin</option>
                             <option value="receptionist">Receptionist</option>
                             <option value="manager">Manager</option>
                             <option value="admin">Admin</option>
-                            <option value="cashier">Cashier</option>
-                            <option value="director">Director</option>
                             <option value="doctor">Doctor</option>
+                            <option value="director">Director</option>
                         </select>
                     </div>
 
@@ -463,12 +478,16 @@ export default function Users() {
                                 opacity: (currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') ? 0.8 : 1
                             }}
                         >
-                            <option value="">No Branch (Admin)</option>
-                            {(branches || []).map(branch => (
-                                <option key={branch.branch_id} value={branch.branch_id}>
-                                    {branch.branch_name}
-                                </option>
-                            ))}
+                            {['admin', 'director', 'super_admin'].includes(formData.role) && (
+                                <option value="">No Specific Branch (Head Office)</option>
+                            )}
+                            {(availableBranches || [])
+                                .filter(branch => !formData.department_id || branch.department_id === formData.department_id)
+                                .map(branch => (
+                                    <option key={branch.branch_id} value={branch.branch_id}>
+                                        {branch.branch_name}
+                                    </option>
+                                ))}
                         </select>
                     </div>
 
@@ -478,10 +497,10 @@ export default function Users() {
                             className="input"
                             value={formData.department_id || ''}
                             onChange={(e) => setFormData({ ...formData, department_id: e.target.value ? parseInt(e.target.value) : null })}
-                            disabled={currentUser?.role !== 'super_admin' && currentUser?.role !== 'director'}
+                            disabled={(currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') || (currentUser?.role === 'director' && currentUser?.department_id)}
                             style={{
-                                backgroundColor: (currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') ? 'var(--surface-muted)' : 'white',
-                                opacity: (currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') ? 0.8 : 1
+                                backgroundColor: ((currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') || (currentUser?.role === 'director' && currentUser?.department_id)) ? 'var(--surface-muted)' : 'white',
+                                opacity: ((currentUser?.role !== 'super_admin' && currentUser?.role !== 'director') || (currentUser?.role === 'director' && currentUser?.department_id)) ? 0.8 : 1
                             }}
                         >
                             <option value="">No Department</option>

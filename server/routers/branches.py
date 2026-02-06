@@ -14,6 +14,7 @@ async def get_branches(
     skip: int = 0,
     limit: int = 100,
     active_only: bool = Query(False, description="Filter only active branches"),
+    department_id: Optional[int] = Query(None, description="Filter by department"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_any_role)
 ):
@@ -22,6 +23,21 @@ async def get_branches(
     
     if active_only:
         query = query.filter(models.Branch.is_active == True)
+        
+    # STRICT ISOLATION LOGIC
+    # 1. Super Admin: Can view all
+    # 2. Others (Director included if restricted by department preference):
+    #    Enforce department isolation if set
+    
+    if current_user.role != models.UserRole.super_admin:
+        if current_user.department_id:
+             query = query.filter(models.Branch.department_id == current_user.department_id)
+        elif department_id:
+             # Allow filtering if not already restricted (e.g. Director with no dept)
+             query = query.filter(models.Branch.department_id == department_id)
+    elif department_id:
+        # Super admin filter
+        query = query.filter(models.Branch.department_id == department_id)
     
     branches = query.order_by(models.Branch.branch_name).offset(skip).limit(limit).all()
     

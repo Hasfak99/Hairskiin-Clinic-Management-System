@@ -48,12 +48,11 @@ async def get_treatments(
         
         # Filter by Branch (Override logic above if needed, or strictly enforce)
         # The logic above handled filter_branch_id, but we must enforce current_user.branch_id if set
-        if current_user.branch_id:
+        # UNLESS IS DIRECTOR
+        if current_user.branch_id and current_user.role != models.UserRole.director:
             query = query.filter(
                 (models.Treatment.branch_id == current_user.branch_id) | 
-                (models.Treatment.branch_id.is_(None)) # Still allow globals? Maybe user wanted STRICT isolation.
-                # User said: "only show Department Harskin branch Borella"
-                # If a treatment is global, it technically belongs to all branches. I will keep it for now.
+                (models.Treatment.branch_id.is_(None)) 
             )
     
     if active_only:

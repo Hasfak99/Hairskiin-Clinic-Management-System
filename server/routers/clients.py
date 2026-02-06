@@ -36,11 +36,14 @@ async def get_clients(
     # Others (including Admin/Director): Strictly restricted to their branch/department IF ASSIGNED
     
     if current_user.role != models.UserRole.super_admin:
-        if current_user.branch_id:
-            query = query.filter(models.Client.branch_id == current_user.branch_id)
-        
+        # 1. Department Isolation: ALWAYS enforce if set
         if current_user.department_id:
             query = query.filter(models.Client.department_id == current_user.department_id)
+            
+        # 2. Branch Isolation:
+        # Enforce if user has branch_id AND IS NOT A DIRECTOR
+        if current_user.branch_id and current_user.role != models.UserRole.director:
+            query = query.filter(models.Client.branch_id == current_user.branch_id)
             
     if search:
         search_term = f"%{search}%"

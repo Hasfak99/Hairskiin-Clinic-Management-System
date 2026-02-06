@@ -38,11 +38,14 @@ async def get_bills(
 
     # STRICT ISOLATION for non-super-admins
     if current_user.role != models.UserRole.super_admin:
-        if current_user.branch_id:
-            query = query.filter(models.Bill.branch_id == current_user.branch_id)
-        
+        # 1. Department Isolation: ALWAYS enforce if set
         if current_user.department_id:
             query = query.filter(models.Bill.department_id == current_user.department_id)
+            
+        # 2. Branch Isolation:
+        # Enforce if user has branch_id AND IS NOT A DIRECTOR
+        if current_user.branch_id and current_user.role != models.UserRole.director:
+            query = query.filter(models.Bill.branch_id == current_user.branch_id)
     
     # Get total count
     total = query.count()
