@@ -959,6 +959,14 @@ textarea.input {
     visibility: hidden;
   }
 
+  /* Reset body margins for print to ensure 0,0 positioning works */
+  body,
+  html {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
   /* Show ONLY the receipt/bill containers when they are active */
   .print-active,
   .print-active * {
@@ -979,8 +987,9 @@ textarea.input {
 
   /* Named pages for different print sizes */
   @page thermal {
-    size: 89mm 78mm;
-    margin: 0;
+    size: 58mm auto;
+    /* Standard XP-58C Label Size */
+    margin: 0mm;
   }
 
   @page professional {
@@ -991,14 +1000,20 @@ textarea.input {
   /* Thermal specific override */
   .print-active .thermal-receipt {
     page: thermal;
-    /* Apply specific page size */
-    width: 89mm;
-    /* height: 78mm; removed fixed height to avoid cut off */
-    min-height: 78mm;
-    padding: 5mm;
-    /* Increased padding */
-    font-size: 11px;
+    width: 48mm;
+    /* Safe printable area for 58mm printer (leaving ~5mm margins) */
+    max-width: 48mm;
+    min-height: auto;
+    padding: 0;
+    font-size: 12px;
+    /* Standard legible size for 58mm */
+    font-weight: 600;
+    color: #000 !important;
     margin: 0 auto;
+    /* Center on the paper strip */
+    line-height: 1.2;
+    overflow: visible;
+    /* Allow long receipts to print fully */
     display: flex;
     flex-direction: column;
     justify-content: center;
