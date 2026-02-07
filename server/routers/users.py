@@ -226,8 +226,7 @@ async def update_user(
             raise HTTPException(status_code=403, detail="Cannot manage users from other branches")
         
         if current_user.department_id and db_user.department_id != current_user.department_id:
-            if current_user.role != 'director' and db_user.department_id != current_user.department_id:
-                 raise HTTPException(status_code=403, detail="Cannot manage users from other departments")
+             raise HTTPException(status_code=403, detail="Cannot manage users from other departments")
 
     update_data = user_update.model_dump(exclude_unset=True)
     if "role" in update_data:
@@ -268,7 +267,7 @@ async def delete_user(
         if current_user.branch_id and db_user.branch_id != current_user.branch_id:
             raise HTTPException(status_code=403, detail="Cannot delete users from other branches")
         
-        if current_user.role != 'director' and current_user.department_id and db_user.department_id != current_user.department_id:
+        if current_user.department_id and db_user.department_id != current_user.department_id:
              raise HTTPException(status_code=403, detail="Cannot delete users from other departments")
 
     if db_user.user_id == current_user.user_id:
@@ -296,7 +295,7 @@ async def reset_password(
         if current_user.branch_id and db_user.branch_id != current_user.branch_id:
             raise HTTPException(status_code=403, detail="Cannot manage users from other branches")
         
-        if current_user.role != 'director' and current_user.department_id and db_user.department_id != current_user.department_id:
+        if current_user.department_id and db_user.department_id != current_user.department_id:
              raise HTTPException(status_code=403, detail="Cannot manage users from other departments")
 
     db_user.password_hash = get_password_hash(new_password)

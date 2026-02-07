@@ -22,6 +22,10 @@ async def get_departments(
     
     if active_only:
         query = query.filter(models.Department.is_active == True)
+        
+    # STRICT ISOLATION
+    if current_user.role != models.UserRole.super_admin and current_user.department_id:
+        query = query.filter(models.Department.department_id == current_user.department_id)
     
     departments = query.offset(skip).limit(limit).all()
     result = []
@@ -43,6 +47,11 @@ async def get_department(
     dept = db.query(models.Department).filter(models.Department.department_id == department_id).first()
     if not dept:
         raise HTTPException(status_code=404, detail="Department not found")
+        
+    # STRICT ISOLATION
+    if current_user.role != models.UserRole.super_admin and current_user.department_id:
+        if dept.department_id != current_user.department_id:
+             raise HTTPException(status_code=403, detail="Not authorized to access this department")
         
     dept_dict = dept.__dict__.copy()
     dept_dict['branches'] = [schemas.BranchSummary(**b.__dict__) for b in dept.branches]
