@@ -149,7 +149,11 @@ export default function Header() {
                            - Others: See only their assigned branch (if assigned), else all (if global)
                         */}
                         {(() => {
-                            const visibleBranches = (user?.role === 'super_admin' || !user?.branch_id)
+                            const isMainBranch = user?.branch_name === 'Main Branch' || user?.branch_name === 'Main Branch ' || !user?.branch_id;
+                            const isSuperOrDirector = user?.role === 'super_admin' || user?.role === 'director';
+                            const canViewAll = isSuperOrDirector || isMainBranch;
+
+                            const visibleBranches = canViewAll
                                 ? branches
                                 : branches.filter(b => b.branch_id === parseInt(user.branch_id));
 

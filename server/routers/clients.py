@@ -41,9 +41,10 @@ async def get_clients(
             query = query.filter(models.Client.department_id == current_user.department_id)
             
         # 2. Branch Isolation:
-        # Enforce if user has branch_id AND IS NOT A DIRECTOR
-        if current_user.branch_id and current_user.role != models.UserRole.director:
-            query = query.filter(models.Client.branch_id == current_user.branch_id)
+    # Enforce if user has branch_id AND IS NOT A DIRECTOR AND NOT Main Branch Admin
+    is_main_branch = current_user.branch and current_user.branch.branch_name == 'Main Branch'
+    if current_user.branch_id and current_user.role != models.UserRole.director and not is_main_branch:
+        query = query.filter(models.Client.branch_id == current_user.branch_id)
             
     if search:
         search_term = f"%{search}%"

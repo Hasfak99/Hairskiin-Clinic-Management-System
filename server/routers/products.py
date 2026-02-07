@@ -39,8 +39,9 @@ async def get_products(
             query = query.filter(models.Product.department_id == current_user.department_id)
         
         # Filter by Branch
-        # Enforce if user has branch_id AND IS NOT A DIRECTOR
-        if current_user.branch_id and current_user.role != models.UserRole.director:
+        # Enforce if user has branch_id AND IS NOT A DIRECTOR AND NOT Main Branch Admin
+        is_main_branch = current_user.branch and current_user.branch.branch_name == 'Main Branch'
+        if current_user.branch_id and current_user.role != models.UserRole.director and not is_main_branch:
             query = query.filter(
                 (models.Product.branch_id == current_user.branch_id) | 
                 (models.Product.branch_id.is_(None))

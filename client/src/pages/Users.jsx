@@ -56,6 +56,21 @@ export default function Users() {
         }
     };
 
+    // Auto-select branch if role requires it and none is selected (fixes "All Branches" bug for Receptionist)
+    useEffect(() => {
+        const isOperationalRole = !['admin', 'director', 'super_admin'].includes(formData.role);
+
+        // Filter branches valid for the current department selection
+        const validBranches = (availableBranches || []).filter(
+            branch => !formData.department_id || branch.department_id === formData.department_id
+        );
+
+        if (isOperationalRole && !formData.branch_id && validBranches.length > 0) {
+            // Auto-select the first valid branch
+            setFormData(prev => ({ ...prev, branch_id: validBranches[0].branch_id }));
+        }
+    }, [formData.role, formData.department_id, availableBranches, formData.branch_id]);
+
     const fetchUsers = async () => {
         try {
             const params = {

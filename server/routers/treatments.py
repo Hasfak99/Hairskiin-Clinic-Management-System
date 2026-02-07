@@ -48,8 +48,9 @@ async def get_treatments(
         
         # Filter by Branch (Override logic above if needed, or strictly enforce)
         # The logic above handled filter_branch_id, but we must enforce current_user.branch_id if set
-        # UNLESS IS DIRECTOR
-        if current_user.branch_id and current_user.role != models.UserRole.director:
+        # UNLESS IS DIRECTOR OR Main Branch Admin
+        is_main_branch = current_user.branch and current_user.branch.branch_name == 'Main Branch'
+        if current_user.branch_id and current_user.role != models.UserRole.director and not is_main_branch:
             query = query.filter(
                 (models.Treatment.branch_id == current_user.branch_id) | 
                 (models.Treatment.branch_id.is_(None)) 

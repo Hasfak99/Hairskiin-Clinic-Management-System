@@ -48,11 +48,28 @@ def seed_admins():
                 "branch_id": branch.branch_id,
                 "department_id": dept_harskin.department_id
             })
+            
+            # SPECIFIC REQUEST: hsdir
+            users_to_create.append({
+                "username": "hsdir",
+                "full_name": "Director Harskin",
+                "role": UserRole.director,
+                "branch_id": branch.branch_id, # User requested Main Branch
+                "department_id": dept_harskin.department_id,
+                "password": "12345678" 
+            })
 
         for u_data in users_to_create:
             existing = db.query(User).filter(User.username == u_data["username"]).first()
             if existing:
-                print(f"User {existing.username} already exists. Skipping.")
+                print(f"User {existing.username} already exists. Updating if needed.")
+                # Optional: Update password/role if crucial
+                if u_data["username"] == "hsdir":
+                     existing.role = u_data["role"]
+                     existing.department_id = u_data["department_id"]
+                     if "password" in u_data:
+                         existing.password_hash = get_password_hash(u_data["password"])
+                     print(f"Updated {existing.username}")
                 continue
 
             # Generate Code
@@ -62,10 +79,12 @@ def seed_admins():
             import random
             seq = random.randint(100, 999)
             user_code = f"{prefix}{seq}"
+            
+            pwd = u_data.get("password", "password123")
 
             new_user = User(
                 username=u_data["username"],
-                password_hash=get_password_hash("password123"),
+                password_hash=get_password_hash(pwd),
                 full_name=u_data["full_name"],
                 role=u_data["role"],
                 branch_id=u_data["branch_id"],

@@ -39,7 +39,10 @@ async def get_appointments(
         # 2. Branch Isolation:
         # Enforce if user has branch_id AND IS NOT A DIRECTOR
         # Directors with a department can see all branches in that department.
-        if current_user.branch_id and current_user.role != models.UserRole.director:
+        # 2. Branch Isolation:
+        # Enforce if user has branch_id AND IS NOT A DIRECTOR AND NOT Main Branch Admin
+        is_main_branch = current_user.branch and current_user.branch.branch_name == 'Main Branch'
+        if current_user.branch_id and current_user.role != models.UserRole.director and not is_main_branch:
             query = query.filter(models.Appointment.branch_id == current_user.branch_id)
 
     if date_from:
