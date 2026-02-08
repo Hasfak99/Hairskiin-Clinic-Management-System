@@ -120,6 +120,44 @@ export default function ClientProfile() {
                     </button>
                 )}
 
+                {/* Quick Actions - Only for internal users (excluding doctors) */}
+                {isInternal && user?.role?.toLowerCase() !== 'doctor' && (
+                    <div style={{
+                        display: 'flex',
+                        gap: 'var(--spacing-3)',
+                        marginBottom: '1.5rem',
+                        flexWrap: 'wrap'
+                    }}>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => {
+                                // Navigate to appointments page and trigger modal
+                                navigate('/appointments');
+                                // Store client ID in sessionStorage for the appointments page to pick up
+                                sessionStorage.setItem('preselectedClientId', client.client_id);
+                                sessionStorage.setItem('preselectedClientName', client.name);
+                            }}
+                            style={{ flex: 1, minWidth: '200px' }}
+                        >
+                            <Calendar size={18} />
+                            Book Appointment
+                        </button>
+                        <button
+                            className="btn btn-success"
+                            onClick={() => {
+                                // Navigate to billing page with client pre-selected
+                                navigate('/billing');
+                                sessionStorage.setItem('preselectedClientId', client.client_id);
+                                sessionStorage.setItem('preselectedClientName', client.name);
+                            }}
+                            style={{ flex: 1, minWidth: '200px' }}
+                        >
+                            <Banknote size={18} />
+                            Create Bill
+                        </button>
+                    </div>
+                )}
+
                 {/* Header - Only different for public */}
                 {!isInternal ? (
                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>

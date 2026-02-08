@@ -49,6 +49,25 @@ export default function Appointments() {
         fetchData();
     }, [pagination.page]);
 
+    // Check for preselected client from sessionStorage (from Client Profile page)
+    useEffect(() => {
+        const preselectedClientId = sessionStorage.getItem('preselectedClientId');
+        const preselectedClientName = sessionStorage.getItem('preselectedClientName');
+
+        if (preselectedClientId && clients.length > 0) {
+            // Auto-open modal with client pre-selected
+            setFormData(prev => ({
+                ...prev,
+                client_id: parseInt(preselectedClientId)
+            }));
+            setShowModal(true);
+
+            // Clear sessionStorage
+            sessionStorage.removeItem('preselectedClientId');
+            sessionStorage.removeItem('preselectedClientName');
+        }
+    }, [clients]);
+
     const fetchData = async () => {
         try {
             const [aptRes, clientRes, treatRes, deptRes, branchRes] = await Promise.all([
