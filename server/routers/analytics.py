@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import get_db
-from models import User, Branch, Client, Bill, Department, UserRole, Appointment, Product, Expense
+from models import User, Branch, Client, Bill, Department, UserRole, Appointment, Product, Expense, AppointmentStatus
 from auth import get_current_user
 from typing import List, Dict, Any
 from datetime import date, datetime, timedelta
@@ -176,3 +176,90 @@ def get_peak_hours(
         "hours": ["10 AM", "11 AM", "12 PM", "1 PM", "4 PM"],
         "counts": [15, 22, 18, 12, 20]
     }
+
+# ==================== DOCTOR DASHBOARD ====================
+
+@router.get("/doctor-stats")
+def get_doctor_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. Today's Appointments query
+    today = date.today()
+    today_query = db.query(Appointment).filter(
+        Appointment.appointment_date == today,
+        Appointment.status != AppointmentStatus.cancelled,
+        Appointment.stylist_id == current_user.user_id
+    )
+    today_appointments = today_query.count()
+
+    # 2. Total Patients (Unique clients treated by this doctor)
+    # Join appointments -> client
+    total_patients = db.query(Appointment.client_id).filter(
+        Appointment.stylist_id == current_user.user_id,
+        Appointment.status == AppointmentStatus.completed
+    ).distinct().count()
+
+    # 3. My Revenue
+    # Sum of final_amount from Bills where stylist_id matches
+    # OR sum from Appointments if using that for tracking (Bill is more accurate for revenue)
+    my_revenue = db.query(func.sum(Bill.final_amount)).filter(
+        Bill.stylist_id == current_user.user_id,
+        Bill.payment_status == 'paid' # Only count paid bills? Or all? Let's say all for dashboard "generated"
+    ).scalar() or 0.0
+
+    # 4. Upcoming Appointments (limit 5)
+    upcoming = db.query(Appointment).filter(
+        Appointment.appointment_date >= today,
+        Appointment.stylist_id == current_user.user_id,
+        Appointment.status == AppointmentStatus.booked
+    ).order_by(Appointment.appointment_date, Appointment.appointment_time).limit(5).all()
+
+    upcoming_list = []
+    for apt in upcoming:
+        upcoming_list.append({
+            "id": apt.appointment_id,
+            "client_name": apt.client.name if apt.client else apt.guest_name,
+            "treatment_name": apt.treatment.treatment_name,
+            "date": apt.appointment_date,
+            "time": apt.appointment_time,
+            "status": apt.status
+        })
+
+    return {
+        "doctor_name": current_user.full_name or current_user.username,
+        "today_appointments": today_appointments,
+        "total_patients": total_patients,
+        "my_revenue": my_revenue,
+        "upcoming_appointments": upcoming_list
+    }
+
+
+@router.get("/doctor-treatments")
+def get_doctor_treatments(
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Get history of completed treatments by this doctor
+    treatments = db.query(Appointment).filter(
+        Appointment.stylist_id == current_user.user_id,
+        Appointment.status == AppointmentStatus.completed
+    ).order_by(Appointment.appointment_date.desc(), Appointment.appointment_time.desc()).limit(limit).all()
+
+    result = []
+    for t in treatments:
+        result.append({
+            "id": t.appointment_id,
+            "client_name": t.client.name if t.client else t.guest_name,
+            "client_phone": t.client.phone if t.client else t.guest_phone,
+            "treatment_name": t.treatment.treatment_name,
+            "date": t.appointment_date,
+            "time": t.appointment_time,
+            "status": t.status,
+            "payment_status": t.payment_status,
+            "notes": t.notes,
+            "price": t.treatment.price # OR t.bill.final_amount if bill exists
+        })
+    
+    return result

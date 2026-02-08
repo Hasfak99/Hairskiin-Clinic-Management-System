@@ -325,6 +325,7 @@ async def record_treatment(
 
     db.commit()
     db.refresh(appointment)
+    db.refresh(bill)
 
     return {
         "message": "Treatment recorded successfully",

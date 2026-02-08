@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Printer, Receipt, Search, Trash2, QrCode, CheckCircle } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom'; // Added useLocation, useNavigate
+import { Plus, Printer, Receipt, Search, Trash2, QrCode, CheckCircle, AlertTriangle } from 'lucide-react';
 import { billsAPI, clientsAPI, treatmentsAPI, productsAPI, branchesAPI, departmentsAPI, usersAPI } from '../api';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
@@ -13,6 +14,10 @@ import ProfessionalBill from '../components/ProfessionalBill';
 import SearchableSelect from '../components/SearchableSelect';
 
 export default function Billing() {
+    const location = useLocation(); // Hook for query params
+    const navigate = useNavigate(); // Hook for navigation
+    const params = new URLSearchParams(location.search);
+    const initialBillId = params.get('billId');
     const [bills, setBills] = useState([]);
     const [clients, setClients] = useState([]);
     const [treatments, setTreatments] = useState([]);
@@ -27,6 +32,7 @@ export default function Billing() {
     const [cashReceived, setCashReceived] = useState(0);
     const [printType, setPrintType] = useState('thermal'); // 'thermal' or 'professional'
     const { user, selectedBranch, isManager } = useAuth();
+    const [pendingBills, setPendingBills] = useState([]); // NEW - For alert
     const [pagination, setPagination] = useState({
         page: 1,
         size: 20,
@@ -45,6 +51,10 @@ export default function Billing() {
         payment_method: 'cash',
         notes: '',
     });
+
+    const isDoctor = (user?.role || '').toLowerCase() === 'doctor';
+    const isManagerCheck = ['manager', 'admin', 'super_admin', 'director'].includes((user?.role || '').toLowerCase());
+    console.log('Current User:', user, 'Is Doctor:', isDoctor, 'Is Manager:', isManagerCheck);
 
     const [createClientMode, setCreateClientMode] = useState(false);
     const [newItem, setNewItem] = useState({
@@ -70,6 +80,26 @@ export default function Billing() {
         fetchData();
         fetchMetadata();
     }, [pagination.page]);
+
+    const handleViewBillDirectly = async (id) => {
+        try {
+            const res = await billsAPI.getById(id);
+            setSelectedBill(res.data);
+            setShowViewModal(true);
+            // Optional: Clear query param to prevent reopening on generic refresh (if desired, but keeping it is fine for reload)
+            // navigate('/billing', { replace: true }); 
+        } catch (error) {
+            console.error("Failed to load bill from URL", error);
+            toast.error("Bill not found or access denied");
+        }
+    };
+
+    // Handle Deep Link to Bill
+    useEffect(() => {
+        if (initialBillId) {
+            handleViewBillDirectly(initialBillId);
+        }
+    }, [initialBillId]);
 
     const fetchMetadata = async () => {
         try {
@@ -106,6 +136,12 @@ export default function Billing() {
             setTreatments(treatRes.data.items || treatRes.data);
             setProducts(prodRes.data.items || prodRes.data);
             setStylists(userRes.data.items || userRes.data); // NEW
+
+            // Separate fetch for Pending Edit Requests (for Alert) if manager
+            if (['manager', 'admin', 'director', 'super_admin'].includes((user?.role || '').toLowerCase())) {
+                const pendingRes = await billsAPI.getAll({ edit_request_status: 'pending' });
+                setPendingBills(pendingRes.data.items || []);
+            }
         } catch (error) {
             toast.error('Failed to fetch data');
         } finally {
@@ -373,10 +409,18 @@ export default function Billing() {
         {
             key: 'payment_status',
             label: 'Status',
-            render: (val) => (
-                <span className={`badge ${val === 'paid' ? 'badge-success' : 'badge-warning'}`}>
-                    {val}
-                </span>
+            render: (val, row) => (
+                <div style={{ display: 'flex', gap: 'var(--spacing-2)', alignItems: 'center' }}>
+                    <span className={`badge ${val === 'paid' ? 'badge-success' : 'badge-warning'}`}>
+                        {val}
+                    </span>
+                    {/* Show Edit Request Badge if Pending */}
+                    {row.edit_request_status === 'pending' && (
+                        <span className="badge badge-error" style={{ fontSize: '0.75em', padding: '3px 8px', fontWeight: 600 }}>
+                            ⚠ Edit Req
+                        </span>
+                    )}
+                </div>
             ),
         },
         { key: 'payment_method', label: 'Method', render: (val) => val || '-' },
@@ -389,43 +433,98 @@ export default function Billing() {
 
     return (
         <div>
+            {/* Manager Alert for Pending Requests */}
+            {pendingBills.length > 0 && isManagerCheck && (
+                <div className="card" style={{
+                    marginBottom: 'var(--spacing-6)',
+                    borderLeft: '4px solid #f59e0b',
+                    background: '#fffbeb',
+                    padding: 'var(--spacing-4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--spacing-3)'
+                }}>
+                    <div className="alert-icon-wrapper" style={{
+                        background: '#fef3c7',
+                        padding: '8px',
+                        borderRadius: '50%',
+                        color: '#d97706'
+                    }}>
+                        <AlertTriangle size={20} />
+                    </div>
+                    <div>
+                        <h4 style={{ color: '#92400e', fontSize: '16px', fontWeight: 600, margin: 0 }}>
+                            {pendingBills.length} Bill{pendingBills.length !== 1 ? 's' : ''} Pending Your Approval
+                        </h4>
+                        <p style={{ color: '#b45309', fontSize: '14px', margin: 0 }}>
+                            Check the list below for bills marked with "Edit Req".
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="page-header">
                 <div>
                     <h1 className="page-title">Billing</h1>
                     <p className="page-subtitle">Create and manage invoices</p>
                 </div>
-                <button
-                    className="btn btn-primary"
-                    onClick={() => { resetForm(); setShowModal(true); }}
-                >
-                    <Plus size={18} />
-                    Create Bill
-                </button>
+                {!isDoctor && (
+                    <button
+                        className="btn btn-primary"
+                        onClick={() => { resetForm(); setShowModal(true); }}
+                    >
+                        <Plus size={18} />
+                        Create Bill
+                    </button>
+                )}
             </div>
 
-            <DataTable
-                columns={columns}
-                data={bills}
-                loading={loading}
-                emptyMessage="No bills found"
-                onRowClick={(row) => {
-                    setCashReceived(0);
-                    setSelectedBill(row);
-                    setPaymentMethod('cash'); // Default
-                    setShowViewModal(true);
-                }}
-                pagination={{
-                    currentPage: pagination.page,
-                    totalPages: pagination.pages,
-                    totalItems: pagination.total,
-                    onPageChange: (page) => setPagination(prev => ({ ...prev, page }))
-                }}
-                actions={(row) => (
-                    <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
-                        {/* Removed Quick Paid button to force review in modal */}
+            {/* Billing List - Hidden for Doctors */}
+            {isDoctor ? (
+                <div style={{
+                    padding: 'var(--spacing-8)',
+                    textAlign: 'center',
+                    background: 'var(--surface-muted)',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '2px dashed var(--border)',
+                    margin: 'var(--spacing-4) 0'
+                }}>
+                    <div style={{ color: 'var(--text-muted)', marginBottom: 'var(--spacing-2)' }}>
+                        <Receipt size={48} style={{ opacity: 0.2 }} />
                     </div>
-                )}
-            />
+                    <h3 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 600, color: 'var(--text-muted)' }}>
+                        Billing History Restricted
+                    </h3>
+                    <p style={{ color: 'var(--text-muted)' }}>
+                        Doctors can only view current session bills via the treatment completion flow.
+                    </p>
+                    <p style={{ fontSize: '0.8rem', color: '#ccc', marginTop: 10 }}>Debug: {user?.username} ({user?.role})</p>
+                </div>
+            ) : (
+                <DataTable
+                    columns={columns}
+                    data={bills}
+                    loading={loading}
+                    emptyMessage="No bills found"
+                    onRowClick={(row) => {
+                        setCashReceived(0);
+                        setSelectedBill(row);
+                        setPaymentMethod('cash'); // Default
+                        setShowViewModal(true);
+                    }}
+                    pagination={{
+                        currentPage: pagination.page,
+                        totalPages: pagination.pages,
+                        totalItems: pagination.total,
+                        onPageChange: (page) => setPagination(prev => ({ ...prev, page }))
+                    }}
+                    actions={(row) => (
+                        <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
+                            {/* Removed Quick Paid button to force review in modal */}
+                        </div>
+                    )}
+                />
+            )}
 
             {/* Create Bill Modal */}
             <Modal
@@ -784,15 +883,23 @@ export default function Billing() {
             <Modal
                 isOpen={showViewModal}
                 onClose={() => setShowViewModal(false)}
-                title={`Bill #${selectedBill?.bill_id?.toString().padStart(4, '0')} - Status: ${selectedBill?.payment_status?.toUpperCase()}`}
+                title={`Bill #${selectedBill?.bill_id?.toString().padStart(4, '0')} - Status: ${selectedBill?.payment_status?.toUpperCase()} (User: ${user?.role})`}
                 size="lg"
                 footer={
                     <div style={{ display: 'flex', gap: 'var(--spacing-2)', width: '100%', justifyContent: 'flex-end' }}>
-                        {/* Request Edit Logic */}
-                        {selectedBill?.payment_status === 'paid' && selectedBill?.edit_request_status !== 'approved' && (
+
+                        {/* READ ONLY FOR DOCTORS - CLOSE BUTTON */}
+                        {isDoctor && (
+                            <button className="btn btn-secondary" onClick={() => setShowViewModal(false)}>
+                                Close
+                            </button>
+                        )}
+
+                        {/* Request Edit Logic - HIDE FOR DOCTORS */}
+                        {!isDoctor && selectedBill?.payment_status === 'paid' && selectedBill?.edit_request_status !== 'approved' && (
                             <div style={{ marginRight: 'auto' }}>
                                 {selectedBill.edit_request_status === 'pending' ? (
-                                    isManager() ? (
+                                    isManagerCheck ? (
                                         <button
                                             className="btn btn-warning"
                                             onClick={() => handleApproveEdit(selectedBill.bill_id)}
@@ -813,14 +920,17 @@ export default function Billing() {
                             </div>
                         )}
 
+                        {/* Print / Payment Buttons - HIDE PAYMENT FOR DOCTORS */}
                         {selectedBill?.payment_status === 'paid' ? (
                             <button className="btn btn-secondary" onClick={() => handlePrint('thermal')}>
                                 <Receipt size={16} /> Print Receipt
                             </button>
                         ) : (
-                            <button className="btn btn-primary" onClick={() => handleCompletePayment()} style={{ width: '100%' }}>
-                                <CheckCircle size={18} style={{ marginRight: 8 }} /> Confirm Payment (LKR {selectedBill?.final_amount})
-                            </button>
+                            !isDoctor && (
+                                <button className="btn btn-primary" onClick={() => handleCompletePayment()} style={{ width: '100%' }}>
+                                    <CheckCircle size={18} style={{ marginRight: 8 }} /> Confirm Payment (LKR {selectedBill?.final_amount})
+                                </button>
+                            )
                         )}
                     </div>
                 }
@@ -842,7 +952,8 @@ export default function Billing() {
                         <div style={{ marginBottom: 'var(--spacing-4)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-2)' }}>
                                 <p style={{ color: 'var(--text-muted)' }}>Items</p>
-                                {((selectedBill.payment_status !== 'paid') || (selectedBill.payment_status === 'paid' && selectedBill.edit_request_status === 'approved')) && !viewAddItem && (
+                                {/* Hide Add Item for Doctors */}
+                                {!isDoctor && ((selectedBill.payment_status !== 'paid') || (selectedBill.payment_status === 'paid' && selectedBill.edit_request_status === 'approved')) && !viewAddItem && (
                                     <button
                                         className="btn btn-ghost btn-xs text-primary"
                                         onClick={() => setViewAddItem(true)}
@@ -926,8 +1037,8 @@ export default function Billing() {
                                 }}>
                                     <div>
                                         <span>{item.item_name} x{item.quantity}</span>
-                                        {/* REMOVE BUTTON IF NOT PAID OR APPROVED */}
-                                        {((selectedBill.payment_status !== 'paid') || (selectedBill.payment_status === 'paid' && selectedBill.edit_request_status === 'approved')) && (
+                                        {/* REMOVE BUTTON IF NOT PAID OR APPROVED - HIDE FOR DOCTOR */}
+                                        {!isDoctor && ((selectedBill.payment_status !== 'paid') || (selectedBill.payment_status === 'paid' && selectedBill.edit_request_status === 'approved')) && (
                                             <button
                                                 className="btn btn-ghost btn-xs ml-2 text-error"
                                                 onClick={async () => {
@@ -951,46 +1062,51 @@ export default function Billing() {
                                             </button>
                                         )}
                                     </div>
-                                    <span style={{ fontWeight: 500 }}>LKR {item.total_price}</span>
+                                    {!isDoctor && (
+                                        <span style={{ fontWeight: 500 }}>LKR {item.total_price}</span>
+                                    )}
                                 </div>
                             ))}
                         </div>
 
-                        <div style={{
-                            padding: 'var(--spacing-4)',
-                            background: 'var(--surface-elevated)',
-                            borderRadius: 'var(--radius-lg)',
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--spacing-2)' }}>
-                                <span>Subtotal</span>
-                                <span>LKR {selectedBill.total_amount}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--spacing-2)' }}>
-                                <span>Discount</span>
-                                <span style={{ color: selectedBill.discount > 0 ? 'var(--error-500)' : 'var(--text-muted)' }}>
-                                    {selectedBill.discount > 0 ? `-LKR ${selectedBill.discount.toFixed(2)}` : 'LKR 0.00'}
-                                </span>
-                            </div>
-                            {selectedBill.tax > 0 && (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--spacing-2)' }}>
-                                    <span>Tax</span>
-                                    <span>+LKR {selectedBill.tax}</span>
-                                </div>
-                            )}
+                        {!isDoctor && (
                             <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                fontWeight: 700,
-                                fontSize: 'var(--font-size-lg)',
-                                paddingTop: 'var(--spacing-2)',
-                                borderTop: '1px solid var(--border)',
+                                padding: 'var(--spacing-4)',
+                                background: 'var(--surface-elevated)',
+                                borderRadius: 'var(--radius-lg)',
                             }}>
-                                <span>Total</span>
-                                <span style={{ color: 'var(--primary-400)' }}>LKR {selectedBill.final_amount}</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--spacing-2)' }}>
+                                    <span>Subtotal</span>
+                                    <span>LKR {selectedBill.total_amount}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--spacing-2)' }}>
+                                    <span>Discount</span>
+                                    <span style={{ color: selectedBill.discount > 0 ? 'var(--error-500)' : 'var(--text-muted)' }}>
+                                        {selectedBill.discount > 0 ? `-LKR ${selectedBill.discount.toFixed(2)}` : 'LKR 0.00'}
+                                    </span>
+                                </div>
+                                {selectedBill.tax > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--spacing-2)' }}>
+                                        <span>Tax</span>
+                                        <span>+LKR {selectedBill.tax}</span>
+                                    </div>
+                                )}
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    fontWeight: 700,
+                                    fontSize: 'var(--font-size-lg)',
+                                    paddingTop: 'var(--spacing-2)',
+                                    borderTop: '1px solid var(--border)',
+                                }}>
+                                    <span>Total</span>
+                                    <span style={{ color: 'var(--primary-400)' }}>LKR {selectedBill.final_amount}</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
-                        {selectedBill.payment_status !== 'paid' && (
+                        {/* Hide Payment Processing for Doctors */}
+                        {!isDoctor && selectedBill.payment_status !== 'paid' && (
                             <div style={{ marginTop: 'var(--spacing-6)', padding: 'var(--spacing-4)', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-lg)' }}>
                                 <h4 style={{ marginBottom: 'var(--spacing-3)' }}>Process Payment</h4>
 
@@ -1059,6 +1175,6 @@ export default function Billing() {
                     </>
                 )
             }
-        </div >
+        </div>
     );
 }

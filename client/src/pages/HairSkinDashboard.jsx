@@ -83,6 +83,7 @@ export default function HairSkinDashboard() {
             icon: Banknote,
             change: '+12.5%',
             positive: true,
+            permission: ['admin', 'super_admin', 'director'], // Restricted
         },
         {
             title: 'Total Clients',
@@ -90,6 +91,7 @@ export default function HairSkinDashboard() {
             icon: Users,
             change: `+${stats?.new_clients_this_month || 0} this month`,
             positive: true,
+            permission: 'all',
         },
         {
             title: 'Appointments',
@@ -97,6 +99,7 @@ export default function HairSkinDashboard() {
             icon: Calendar,
             change: `${stats?.completed_appointments || 0} completed`,
             positive: true,
+            permission: 'all',
         },
         {
             title: 'Low Stock',
@@ -104,8 +107,9 @@ export default function HairSkinDashboard() {
             icon: Package,
             change: 'Products need restock',
             positive: stats?.low_stock_products === 0,
+            permission: 'all',
         },
-    ];
+    ].filter(card => card.permission === 'all' || card.permission.includes(user?.role));
 
     if (loading) {
         return (
@@ -314,18 +318,20 @@ export default function HairSkinDashboard() {
                     </div>
 
                     {/* Net Profit Summary */}
-                    <div style={{
-                        marginTop: 'var(--spacing-6)',
-                        padding: 'var(--spacing-5)',
-                        background: '#ffffff',
-                        border: '2px solid #000000',
-                        borderRadius: 'var(--radius-xl)',
-                    }}>
-                        <p style={{ fontSize: 'var(--font-size-sm)', color: '#666666', fontWeight: 500 }}>Net Profit (This Month)</p>
-                        <p style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 700, color: '#000000' }}>
-                            {formatCurrency(stats?.net_profit || 0)}
-                        </p>
-                    </div>
+                    {['admin', 'super_admin', 'director'].includes(user?.role) && (
+                        <div style={{
+                            marginTop: 'var(--spacing-6)',
+                            padding: 'var(--spacing-5)',
+                            background: '#ffffff',
+                            border: '2px solid #000000',
+                            borderRadius: 'var(--radius-xl)',
+                        }}>
+                            <p style={{ fontSize: 'var(--font-size-sm)', color: '#666666', fontWeight: 500 }}>Net Profit (This Month)</p>
+                            <p style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 700, color: '#000000' }}>
+                                {formatCurrency(stats?.net_profit || 0)}
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div >

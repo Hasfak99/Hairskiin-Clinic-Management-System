@@ -165,10 +165,14 @@ export default function ProvideTreatment() {
                 }))
             };
 
-            await treatmentsAPI.recordTreatment(payload);
+            const response = await treatmentsAPI.recordTreatment(payload);
 
             toast.success('Treatment recorded successfully! Bill created.');
-            navigate('/billing');
+            if (response.data && response.data.bill_id) {
+                navigate(`/billing?billId=${response.data.bill_id}`);
+            } else {
+                navigate('/billing');
+            }
         } catch (error) {
             console.error(error);
             toast.error(error.response?.data?.detail || 'Failed to record treatment');

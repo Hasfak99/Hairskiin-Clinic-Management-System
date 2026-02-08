@@ -18,7 +18,8 @@ import {
     Building2,
     Shield
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { billsAPI } from '../api';
 
 const navItems = [
     { path: '/super-admin', icon: Shield, label: 'Super Admin', roles: ['super_admin'] },
@@ -29,7 +30,7 @@ const navItems = [
     { path: '/my-treatments', icon: Scissors, label: 'My Treatments', roles: ['doctor'] },
     { path: '/treatments', icon: Scissors, label: 'Treatments', roles: ['admin', 'manager', 'director', 'super_admin'] },
     { path: '/products', icon: Package, label: 'Products', roles: ['admin', 'manager', 'director', 'super_admin'], departmentRestricted: true },
-    { path: '/billing', icon: Receipt, label: 'Billing', roles: ['admin', 'manager', 'receptionist', 'cashier', 'director', 'super_admin'] },
+    { path: '/billing', icon: Receipt, label: 'Billing', roles: ['admin', 'receptionist', 'cashier', 'director', 'super_admin'] },
     { path: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'manager', 'director', 'super_admin'] },
     { path: '/branches', icon: Building2, label: 'Branches', roles: ['admin', 'manager', 'director', 'super_admin'] },
     { path: '/departments', icon: Building2, label: 'Departments', roles: ['admin', 'director', 'super_admin'] },
@@ -41,17 +42,40 @@ export default function Sidebar() {
     const { user, logout } = useAuth();
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(false);
+    const [pendingCount, setPendingCount] = useState(0);
+
+    // Fetch pending bills count for privileged users
+    useEffect(() => {
+        const fetchPendingCount = async () => {
+            const userRole = (user?.role || '').toLowerCase();
+            if (['admin', 'manager', 'director', 'super_admin'].includes(userRole)) {
+                try {
+                    const res = await billsAPI.getAll({ edit_request_status: 'pending' });
+                    setPendingCount(res.data.items?.length || 0);
+                } catch (error) {
+                    console.error('Failed to fetch pending bills count', error);
+                }
+            }
+        };
+
+        fetchPendingCount();
+        // Poll every minute
+        const interval = setInterval(fetchPendingCount, 60000);
+        return () => clearInterval(interval);
+    }, [user]);
 
     const filteredNavItems = navItems.filter(item => {
-        // 1. Role Check
-        const hasRole = item.roles.includes(user?.role);
+        // 1. Role Check (Case Insensitive)
+        const userRole = (user?.role || '').toLowerCase();
+        const hasRole = item.roles.includes(userRole);
         if (!hasRole) return false;
 
         // 2. Department Restriction (Specific to Hair Skin Clinic request)
         // "Products" only visible if 'Hair Skin Clinic' OR Admin/Director
         if (item.departmentRestricted) {
             const isRestrictedDept = user?.department_name !== 'Hair Skin Clinic';
-            const isPrivileged = ['admin', 'director', 'super_admin'].includes(user?.role);
+            const userRole = (user?.role || '').toLowerCase();
+            const isPrivileged = ['admin', 'director', 'super_admin'].includes(userRole);
 
             // If user is from another department (e.g. Harskin) AND not privileged, HIDE it
             if (isRestrictedDept && !isPrivileged) {
@@ -153,7 +177,16 @@ export default function Sidebar() {
                                     title={collapsed ? item.label : undefined}
                                 >
                                     <item.icon size={20} />
-                                    {!collapsed && <span>{item.label}</span>}
+                                    {!collapsed && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                            <span>{item.label}</span>
+                                            {item.path === '/billing' && pendingCount > 0 && (
+                                                <span className="badge badge-error" style={{ fontSize: '10px', padding: '2px 6px', height: 'auto' }}>
+                                                    {pendingCount}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                 </NavLink>
                             </li>
                         ))}
