@@ -23,15 +23,22 @@ def get_analytics_dashboard(
     appt_query = db.query(Appointment)
     product_query = db.query(Product)
 
-    # Filter by Branch for non-Super Admins (or if user has branch_id)
-    # Even Admins are usually branch-specific in this context if they are assigned to one.
-    if current_user.branch_id:
+    # Determine if user is a Director at Main Branch
+    is_director_at_main = False
+    if current_user.role.lower() == 'director' and current_user.branch_id:
+        branch = db.query(Branch).filter(Branch.branch_id == current_user.branch_id).first()
+        if branch and branch.branch_name.lower() == 'main branch':
+            is_director_at_main = True
+
+    # Filter by Branch for non-Directors or Directors not at Main Branch
+    # Directors at Main Branch see ALL branches for their department
+    if current_user.branch_id and not is_director_at_main:
         bill_query = bill_query.filter(Bill.branch_id == current_user.branch_id)
         client_query = client_query.filter(Client.branch_id == current_user.branch_id)
         appt_query = appt_query.filter(Appointment.branch_id == current_user.branch_id)
         product_query = product_query.filter(Product.branch_id == current_user.branch_id)
 
-    # Filter by Department Strict Isolation
+    # Filter by Department Strict Isolation (applies to everyone)
     if current_user.department_id:
         bill_query = bill_query.filter(Bill.department_id == current_user.department_id)
         client_query = client_query.filter(Client.department_id == current_user.department_id)

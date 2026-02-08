@@ -160,13 +160,33 @@ async def get_client(
         .order_by(models.Appointment.appointment_date.desc())\
         .first()
     
+    # Fetch treatment history
+    appointments = db.query(models.Appointment)\
+        .filter(models.Appointment.client_id == client.client_id)\
+        .order_by(models.Appointment.appointment_date.desc())\
+        .all()
+    
+    treatments_done = []
+    for apt in appointments:
+        treatment_item = schemas.TreatmentHistoryItem(
+            appointment_id=apt.appointment_id,
+            treatment_name=apt.treatment.treatment_name if apt.treatment else "Unknown",
+            appointment_date=apt.appointment_date,
+            appointment_time=apt.appointment_time,
+            status=apt.status.value if hasattr(apt.status, 'value') else apt.status,
+            payment_status=apt.payment_status,
+            amount=apt.treatment.price if apt.treatment else None
+        )
+        treatments_done.append(treatment_item)
+    
     return schemas.ClientWithHistory(
         **client.__dict__,
         branch_name=client.branch.branch_name if client.branch else None,
         department_name=client.department.department_name if client.department else None,
         total_appointments=total_appointments,
         total_spent=total_spent,
-        last_visit=last_appointment.created_at if last_appointment else None
+        last_visit=last_appointment.created_at if last_appointment else None,
+        treatments_done=treatments_done
     )
 
 

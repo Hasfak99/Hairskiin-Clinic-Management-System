@@ -358,7 +358,7 @@ class AppointmentUpdate(BaseModel):
     appointment_date: Optional[date] = None
     appointment_time: Optional[time] = None
     status: Optional[AppointmentStatus] = None
-    payment_status: str
+    payment_status: Optional[str] = None  # Made optional
     edit_request_status: Optional[str] = "none"  # NEW
     notes: Optional[str] = None
     department_id: Optional[int] = None
