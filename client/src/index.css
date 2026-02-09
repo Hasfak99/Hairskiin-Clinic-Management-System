@@ -987,8 +987,8 @@ textarea.input {
 
   /* Named pages for different print sizes */
   @page thermal {
-    size: 58mm auto;
-    /* Standard XP-58C Label Size */
+    size: 80mm auto;
+    /* 80mm Thermal Printer Size */
     margin: 0mm;
   }
 
@@ -997,16 +997,16 @@ textarea.input {
     margin: 0;
   }
 
-  /* Thermal specific override - XP-58C Printer Optimized */
+  /* Thermal specific override - 80mm Printer Optimized */
   .print-active .thermal-receipt {
     page: thermal;
-    width: 58mm;
-    max-width: 58mm;
+    width: 80mm;
+    max-width: 80mm;
     min-height: auto;
-    padding: 8mm 5mm;
+    padding: 8mm 6mm;
     margin: 0 auto;
     font-family: "Courier New", Courier, monospace !important;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 800;
     color: #000 !important;
     background: #fff !important;
@@ -1025,8 +1025,8 @@ textarea.input {
   }
 
   .print-active .thermal-receipt img {
-    max-width: 70px;
-    max-height: 70px;
+    max-width: 80px;
+    max-height: 80px;
     display: inline-block;
     margin: 0 auto 10px auto;
     image-rendering: -webkit-optimize-contrast;
@@ -1036,7 +1036,7 @@ textarea.input {
   .print-active .thermal-receipt table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 900;
     margin: 0 auto;
     text-align: center;
@@ -1087,16 +1087,16 @@ textarea.input {
   }
 }
 
-/* Thermal Receipt Screen Styles - XP-58C Preview */
+/* Thermal Receipt Screen Styles - 80mm Printer */
 .thermal-receipt {
   background: #ffffff;
-  width: 58mm;
-  max-width: 58mm;
-  padding: 8mm 5mm;
+  width: 80mm;
+  max-width: 80mm;
+  padding: 8mm 6mm;
   margin: 20px auto;
   font-family: "Courier New", Courier, monospace;
   color: #000000;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   line-height: 1.6;
   border: 1px solid #e5e5e5;

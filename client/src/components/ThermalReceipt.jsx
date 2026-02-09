@@ -14,12 +14,12 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
     const thermalStyles = {
         container: {
             fontFamily: '"Courier New", Courier, monospace',
-            width: '58mm',
-            maxWidth: '58mm',
-            padding: '8mm 5mm',
+            width: '80mm',
+            maxWidth: '80mm',
+            padding: '8mm 6mm',
             backgroundColor: '#ffffff',
             color: '#000000',
-            fontSize: '13px',
+            fontSize: '14px',
             lineHeight: '1.6',
             textAlign: 'center',
             fontWeight: '800',
@@ -30,8 +30,8 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
             marginTop: '8px',
         },
         logo: {
-            width: '70px',
-            height: '70px',
+            width: '80px',
+            height: '80px',
             marginBottom: '10px',
             objectFit: 'contain',
             display: 'inline-block',
@@ -41,16 +41,16 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
             marginBottom: '12px',
         },
         shopName: {
-            fontSize: '24px',
+            fontSize: '28px',
             fontWeight: '900',
-            letterSpacing: '3px',
+            letterSpacing: '5px',
             margin: '0 0 10px 0',
             textTransform: 'uppercase',
             lineHeight: '1.3',
             whiteSpace: 'nowrap',
         },
         contactInfo: {
-            fontSize: '11px',
+            fontSize: '13px',
             margin: '6px 0',
             lineHeight: '1.7',
             textAlign: 'center',
@@ -68,17 +68,17 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
         },
         billInfo: {
             textAlign: 'center',
-            fontSize: '13px',
+            fontSize: '15px',
             margin: '10px 0',
             fontWeight: '900',
         },
         billNumber: {
             fontWeight: '900',
             margin: '5px 0',
-            fontSize: '14px',
+            fontSize: '16px',
         },
         receptionist: {
-            fontSize: '12px',
+            fontSize: '14px',
             margin: '5px 0',
             fontWeight: '800',
         },
@@ -86,7 +86,7 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
             width: '100%',
             borderCollapse: 'collapse',
             marginTop: '12px',
-            fontSize: '13px',
+            fontSize: '15px',
             fontWeight: '900',
             textAlign: 'center',
         },
@@ -110,7 +110,7 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
             borderTop: '2px solid #000',
             paddingTop: '12px',
             marginTop: '12px',
-            fontSize: '14px',
+            fontSize: '16px',
             fontWeight: '900',
             textAlign: 'center',
         },
@@ -125,7 +125,7 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
             display: 'block',
             textAlign: 'center',
             fontWeight: '900',
-            fontSize: '20px',
+            fontSize: '22px',
             marginTop: '12px',
             paddingTop: '12px',
             borderTop: '3px double #000',
@@ -134,7 +134,7 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
             textAlign: 'center',
             marginTop: '18px',
             marginBottom: '10px',
-            fontSize: '16px',
+            fontSize: '18px',
             fontWeight: '900',
             letterSpacing: '6px',
         }
@@ -174,21 +174,21 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
             <table style={thermalStyles.table}>
                 <thead>
                     <tr style={thermalStyles.tableHeader}>
-                        <th style={{ textAlign: 'center', fontWeight: '900', padding: '6px 0', fontSize: '14px' }}>Item</th>
-                        <th style={{ textAlign: 'center', fontWeight: '900', padding: '6px 0', fontSize: '14px' }}>Qty</th>
-                        <th style={{ textAlign: 'center', fontWeight: '900', padding: '6px 0', fontSize: '14px' }}>Price</th>
+                        <th style={{ textAlign: 'center', fontWeight: '900', padding: '6px 0', fontSize: '16px' }}>Item</th>
+                        <th style={{ textAlign: 'center', fontWeight: '900', padding: '6px 0', fontSize: '16px' }}>Qty</th>
+                        <th style={{ textAlign: 'center', fontWeight: '900', padding: '6px 0', fontSize: '16px' }}>Price</th>
                     </tr>
                 </thead>
                 <tbody>
                     {bill.details?.map((item, i) => (
                         <tr key={i} style={thermalStyles.tableRow}>
-                            <td style={{ textAlign: 'center', padding: '6px 0', fontSize: '13px', fontWeight: '900' }}>
+                            <td style={{ textAlign: 'center', padding: '6px 0', fontSize: '15px', fontWeight: '900' }}>
                                 {item.item_name}
                             </td>
-                            <td style={{ textAlign: 'center', padding: '6px 0', fontSize: '13px', fontWeight: '900' }}>
+                            <td style={{ textAlign: 'center', padding: '6px 0', fontSize: '15px', fontWeight: '900' }}>
                                 {item.quantity}
                             </td>
-                            <td style={{ textAlign: 'center', padding: '6px 0', fontSize: '13px', fontWeight: '900' }}>
+                            <td style={{ textAlign: 'center', padding: '6px 0', fontSize: '15px', fontWeight: '900' }}>
                                 {parseFloat(item.total_price).toFixed(2)}
                             </td>
                         </tr>
@@ -197,19 +197,19 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
             </table>
 
             <div style={thermalStyles.totalsSection}>
-                <div style={{ textAlign: 'center', margin: '6px 0', fontSize: '14px', fontWeight: '900' }}>
+                <div style={{ textAlign: 'center', margin: '6px 0', fontSize: '16px', fontWeight: '900' }}>
                     <div>Subtotal: {parseFloat(bill.total_amount).toFixed(2)}</div>
                 </div>
                 {bill.discount > 0 && (
-                    <div style={{ textAlign: 'center', margin: '6px 0', fontSize: '14px', fontWeight: '900' }}>
+                    <div style={{ textAlign: 'center', margin: '6px 0', fontSize: '16px', fontWeight: '900' }}>
                         <div>Discount: -{parseFloat(bill.discount).toFixed(2)}</div>
                     </div>
                 )}
             </div>
 
             <div style={thermalStyles.grandTotal}>
-                <div style={{ marginBottom: '8px', fontSize: '20px' }}>TOTAL</div>
-                <div style={{ fontSize: '24px', fontWeight: '900' }}>Rs. {parseFloat(bill.final_amount).toFixed(2)}</div>
+                <div style={{ marginBottom: '8px', fontSize: '22px' }}>TOTAL</div>
+                <div style={{ fontSize: '28px', fontWeight: '900' }}>Rs. {parseFloat(bill.final_amount).toFixed(2)}</div>
             </div>
 
             {bill.cashReceived > 0 && (
