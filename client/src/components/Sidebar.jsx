@@ -31,10 +31,10 @@ const navItems = [
     { path: '/treatments', icon: Scissors, label: 'Treatments', roles: ['admin', 'manager', 'director', 'super_admin'] },
     { path: '/products', icon: Package, label: 'Products', roles: ['admin', 'manager', 'director', 'super_admin'], departmentRestricted: true },
     { path: '/billing', icon: Receipt, label: 'Billing', roles: ['admin', 'receptionist', 'cashier', 'director', 'super_admin'] },
-    { path: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['admin', 'manager', 'director', 'super_admin'] },
+    { path: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['manager', 'director', 'super_admin'] },
     { path: '/branches', icon: Building2, label: 'Branches', roles: ['admin', 'manager', 'director', 'super_admin'] },
     { path: '/departments', icon: Building2, label: 'Departments', roles: ['admin', 'director', 'super_admin'] },
-    { path: '/users', icon: Settings, label: 'Users', roles: ['admin', 'director', 'super_admin'] },
+    { path: '/users', icon: Settings, label: 'Users', roles: ['director', 'super_admin'] },
     { path: '/settings/backup', icon: Shield, label: 'Backup', roles: ['admin', 'super_admin'] },
 ];
 
@@ -44,11 +44,11 @@ export default function Sidebar() {
     const [collapsed, setCollapsed] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
 
-    // Fetch pending bills count for privileged users
+    // Fetch pending bills count for privileged users (managers, directors, super_admins only)
     useEffect(() => {
         const fetchPendingCount = async () => {
             const userRole = (user?.role || '').toLowerCase();
-            if (['admin', 'manager', 'director', 'super_admin'].includes(userRole)) {
+            if (['manager', 'director', 'super_admin'].includes(userRole)) {
                 try {
                     const res = await billsAPI.getAll({ edit_request_status: 'pending' });
                     setPendingCount(res.data.items?.length || 0);

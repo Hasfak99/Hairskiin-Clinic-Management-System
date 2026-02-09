@@ -254,7 +254,7 @@ async def delete_user(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(require_admin)
 ):
-    """Deactivate user (Admin only) - soft delete"""
+    """Delete user permanently from database (Hard delete)"""
     db_user = db.query(models.User).filter(models.User.user_id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -262,8 +262,9 @@ async def delete_user(
     # HIERARCHY CHECK
     check_role_hierarchy(current_user, db_user)
     
-    # STRICT ISOLATION
-    if current_user.role != models.UserRole.super_admin:
+    # STRICT ISOLATION - Directors and Super Admins can delete across all branches
+    # Admins and Managers are restricted to their own branch/department
+    if current_user.role not in [models.UserRole.super_admin, models.UserRole.director]:
         if current_user.branch_id and db_user.branch_id != current_user.branch_id:
             raise HTTPException(status_code=403, detail="Cannot delete users from other branches")
         
@@ -271,9 +272,10 @@ async def delete_user(
              raise HTTPException(status_code=403, detail="Cannot delete users from other departments")
 
     if db_user.user_id == current_user.user_id:
-        raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
     
-    db_user.status = "inactive"
+    # HARD DELETE - Permanently remove from database
+    db.delete(db_user)
     db.commit()
     return None
 

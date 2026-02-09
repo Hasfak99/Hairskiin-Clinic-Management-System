@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import get_db
-from models import User, Branch, Client, Bill, Department, UserRole, Appointment, Product, Expense, AppointmentStatus
+from models import User, Branch, Client, Bill, BillDetail, Department, UserRole, Appointment, Product, Expense, AppointmentStatus
 from auth import get_current_user
 from typing import List, Dict, Any
 from datetime import date, datetime, timedelta
@@ -125,13 +125,27 @@ def get_top_products(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Frontend expects: name, quantity_sold
+    """Get top-selling products from actual database"""
+    # Query bill details to get product sales
+    from sqlalchemy import func
+    
+    top_products = db.query(
+        Product.product_name.label('name'),
+        func.sum(BillDetail.quantity).label('quantity_sold')
+    ).join(
+        BillDetail, BillDetail.item_id == Product.product_id
+    ).filter(
+        BillDetail.item_type == 'product'
+    ).group_by(
+        Product.product_id, Product.product_name
+    ).order_by(
+        func.sum(BillDetail.quantity).desc()
+    ).limit(limit).all()
+    
+    # Convert to dict format
     return [
-        {"name": "L'Oreal Shampoo", "quantity_sold": 50},
-        {"name": "Kerastase Oil", "quantity_sold": 35},
-        {"name": "Skin Serum", "quantity_sold": 60},
-        {"name": "Face Wash", "quantity_sold": 85},
-        {"name": "Sunscreen", "quantity_sold": 45}
+        {"name": product.name, "quantity_sold": int(product.quantity_sold or 0)}
+        for product in top_products
     ]
 
 @router.get("/appointments-trend")

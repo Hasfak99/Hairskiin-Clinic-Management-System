@@ -296,8 +296,8 @@ async def approve_bill_edit(
     current_user: models.User = Depends(require_any_role)
 ):
     """Approve edit request for a bill"""
-    if current_user.role not in ['admin', 'manager', 'director', 'super_admin']:
-         raise HTTPException(status_code=403, detail="Only managers can approve edits")
+    if current_user.role not in ['manager', 'director', 'super_admin']:
+         raise HTTPException(status_code=403, detail="Only managers/directors can approve edits")
 
     db_bill = db.query(models.Bill).filter(models.Bill.bill_id == bill_id).first()
     if not db_bill:

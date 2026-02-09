@@ -566,26 +566,60 @@ export default function Billing() {
                     <div className="grid grid-cols-2" style={{ gap: 'var(--spacing-4)', marginBottom: 'var(--spacing-4)' }}>
                         <div className="input-group">
                             <label className="input-label">Branch</label>
-                            {user?.branch_id ? (
-                                <input
-                                    type="text"
-                                    className="input disabled"
-                                    value={branches.find(b => b.branch_id === user.branch_id)?.branch_name || ''}
-                                    disabled
-                                    readOnly
-                                />
-                            ) : (
-                                <select
-                                    className="input"
-                                    value={formData.branch_id}
-                                    onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
-                                >
-                                    <option value="">Default (Your Branch)</option>
-                                    {branches.map(b => (
-                                        <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
-                                    ))}
-                                </select>
-                            )}
+                            {(() => {
+                                // Directors and Admins can select any branch
+                                const isDirectorOrAdmin = ['director', 'admin', 'super_admin'].includes(user?.role?.toLowerCase());
+                                const userBranch = branches.find(b => b.branch_id === user?.branch_id);
+
+                                if (isDirectorOrAdmin) {
+                                    // Directors/Admins: show dropdown with all branches, defaulting to their branch
+                                    return (
+                                        <select
+                                            className="input"
+                                            value={formData.branch_id || user?.branch_id || ''}
+                                            onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                                        >
+                                            <option value="">Select Branch</option>
+                                            {branches.length > 0 ? (
+                                                branches.map(b => (
+                                                    <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
+                                                ))
+                                            ) : (
+                                                <option value="" disabled>Loading branches...</option>
+                                            )}
+                                        </select>
+                                    );
+                                } else if (user?.branch_id) {
+                                    // Regular users: show their branch as disabled
+                                    return (
+                                        <input
+                                            type="text"
+                                            className="input disabled"
+                                            value={userBranch?.branch_name || 'Loading...'}
+                                            disabled
+                                            readOnly
+                                        />
+                                    );
+                                } else {
+                                    // Users without branch: show dropdown
+                                    return (
+                                        <select
+                                            className="input"
+                                            value={formData.branch_id}
+                                            onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                                        >
+                                            <option value="">Select Branch</option>
+                                            {branches.length > 0 ? (
+                                                branches.map(b => (
+                                                    <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
+                                                ))
+                                            ) : (
+                                                <option value="" disabled>Loading branches...</option>
+                                            )}
+                                        </select>
+                                    );
+                                }
+                            })()}
                         </div>
                         <div className="input-group">
                             <label className="input-label">Department</label>

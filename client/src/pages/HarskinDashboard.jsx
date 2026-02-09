@@ -32,14 +32,30 @@ export default function HarskinDashboard() {
 
     const fetchDashboardData = async () => {
         try {
-            const [statsRes, appointmentsRes, billsRes] = await Promise.all([
+            // Only fetch pending bills for authorized roles
+            const canApproveBills = ['manager', 'director', 'super_admin'].includes(user?.role?.toLowerCase());
+
+            const promises = [
                 analyticsAPI.getDashboard(),
                 appointmentsAPI.getToday(),
-                billsAPI.getAll({ edit_request_status: 'pending' }),
-            ]);
-            setStats(statsRes.data);
-            setTodayAppointments(appointmentsRes.data);
-            setPendingBills(billsRes.data.items || []);
+            ];
+
+            // Only add bills API call if user can approve
+            if (canApproveBills) {
+                promises.push(billsAPI.getAll({ edit_request_status: 'pending' }));
+            }
+
+            const results = await Promise.all(promises);
+
+            setStats(results[0].data);
+            setTodayAppointments(results[1].data);
+
+            // Only set pending bills if we fetched them
+            if (canApproveBills && results[2]) {
+                setPendingBills(results[2].data.items || []);
+            } else {
+                setPendingBills([]);
+            }
         } catch (error) {
             console.error('Error fetching dashboard:', error);
         } finally {
@@ -113,9 +129,9 @@ export default function HarskinDashboard() {
                 </Link>
             </div>
 
-            {/* Pending Approvals Alert */}
+            {/* Pending Approvals Alert - Only for Managers/Directors/Super Admins */}
             {
-                pendingBills.length > 0 && (
+                pendingBills.length > 0 && ['manager', 'director', 'super_admin'].includes(user?.role?.toLowerCase()) && (
                     <div className="card" style={{
                         marginBottom: 'var(--spacing-8)',
                         borderLeft: '4px solid #f59e0b',
