@@ -158,9 +158,6 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
             {/* Receipt Info */}
             <div style={{ fontSize: '12px', margin: '10px 0', textAlign: 'center', fontWeight: '900' }}>
                 <div>{formatBillNumber()}</div>
-                <div style={{ marginTop: '4px', fontSize: '11px', fontWeight: '700' }}>
-                    Manager: {bill.created_by_name || bill.receptionist || 'N/A'}
-                </div>
                 <div style={{ marginTop: '6px', fontSize: '10px', fontWeight: '700' }}>
                     <div>{formatDateTime()}</div>
                     <div style={{ marginTop: '2px' }}>2nd No. 10, Shady Grove Ave, Borella</div>

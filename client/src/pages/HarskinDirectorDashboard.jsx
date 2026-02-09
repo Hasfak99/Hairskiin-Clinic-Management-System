@@ -122,7 +122,7 @@ export default function HarskinDirectorDashboard() {
                         <Sparkles size={18} />
                         Campaign Manager
                     </button>
-                    <Link to="/appointments" className="btn btn-primary" style={{ background: 'var(--secondary-500)', borderColor: 'var(--secondary-500)' }}>
+                    <Link to="/appointments" className="btn btn-primary" style={{ background: 'var(--secondary-500)', borderColor: 'var(--secondary-500)', color: '#000' }}>
                         <Calendar size={18} />
                         View Bookings
                     </Link>
