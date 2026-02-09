@@ -6,9 +6,13 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
 
     const formatBillNumber = () => {
         if (!bill.bill_id || !bill.bill_date) return 'N/A';
-        const paddedId = bill.bill_id.toString().padStart(6, '0');
-        const date = format(new Date(bill.bill_date), 'MM/dd/yy');
-        return `#${paddedId}${date}`;
+        const paddedId = bill.bill_id.toString().padStart(7, '0');
+        return `Receipt #${paddedId}`;
+    };
+
+    const formatDateTime = () => {
+        if (!bill.bill_date) return 'N/A';
+        return format(new Date(bill.bill_date), 'dd/MM/yyyy HH:mm:ss');
     };
 
     const thermalStyles = {
@@ -142,7 +146,8 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
 
     return (
         <div className="thermal-receipt" style={thermalStyles.container}>
-            <div style={thermalStyles.logoContainer}>
+            {/* Header Section */}
+            <div style={{ textAlign: 'center', marginBottom: '10px', paddingBottom: '8px', borderBottom: '2px solid #000' }}>
                 <img 
                     src="/HS_1.png" 
                     alt="Logo"
@@ -150,81 +155,99 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
                 />
             </div>
 
-            <div style={thermalStyles.header}>
-                <div style={thermalStyles.shopName}>{clinicName}</div>
-            </div>
-
-            <div style={thermalStyles.contactInfo}>
-                <div>2nd No. 10, Shady Grove Ave</div>
-                <div>Borella</div>
-                <div>0112688449 | 0772008802</div>
-            </div>
-
-            <div style={thermalStyles.divider}></div>
-
-            <div style={thermalStyles.billInfo}>
-                <div style={thermalStyles.billNumber}>Bill No: {formatBillNumber()}</div>
-                <div style={thermalStyles.receptionist}>
-                    Receptionist: {bill.created_by_name || bill.receptionist || 'N/A'}
+            {/* Receipt Info */}
+            <div style={{ fontSize: '12px', margin: '10px 0', textAlign: 'center', fontWeight: '900' }}>
+                <div>{formatBillNumber()}</div>
+                <div style={{ marginTop: '4px', fontSize: '11px', fontWeight: '700' }}>
+                    Manager: {bill.created_by_name || bill.receptionist || 'N/A'}
+                </div>
+                <div style={{ marginTop: '6px', fontSize: '10px', fontWeight: '700' }}>
+                    <div>{formatDateTime()}</div>
+                    <div style={{ marginTop: '2px' }}>2nd No. 10, Shady Grove Ave, Borella</div>
                 </div>
             </div>
 
-            <div style={thermalStyles.dashedDivider}></div>
-
-            <table style={thermalStyles.table}>
-                <thead>
-                    <tr style={thermalStyles.tableHeader}>
-                        <th style={{ textAlign: 'center', fontWeight: '900', padding: '6px 0', fontSize: '16px' }}>Item</th>
-                        <th style={{ textAlign: 'center', fontWeight: '900', padding: '6px 0', fontSize: '16px' }}>Qty</th>
-                        <th style={{ textAlign: 'center', fontWeight: '900', padding: '6px 0', fontSize: '16px' }}>Price</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {bill.details?.map((item, i) => (
-                        <tr key={i} style={thermalStyles.tableRow}>
-                            <td style={{ textAlign: 'center', padding: '6px 0', fontSize: '15px', fontWeight: '900' }}>
-                                {item.item_name}
-                            </td>
-                            <td style={{ textAlign: 'center', padding: '6px 0', fontSize: '15px', fontWeight: '900' }}>
-                                {item.quantity}
-                            </td>
-                            <td style={{ textAlign: 'center', padding: '6px 0', fontSize: '15px', fontWeight: '900' }}>
-                                {parseFloat(item.total_price).toFixed(2)}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-
-            <div style={thermalStyles.totalsSection}>
-                <div style={{ textAlign: 'center', margin: '6px 0', fontSize: '16px', fontWeight: '900' }}>
-                    <div>Subtotal: {parseFloat(bill.total_amount).toFixed(2)}</div>
-                </div>
-                {bill.discount > 0 && (
-                    <div style={{ textAlign: 'center', margin: '6px 0', fontSize: '16px', fontWeight: '900' }}>
-                        <div>Discount: -{parseFloat(bill.discount).toFixed(2)}</div>
-                    </div>
-                )}
-            </div>
-
-            <div style={thermalStyles.grandTotal}>
-                <div style={{ marginBottom: '8px', fontSize: '22px' }}>TOTAL</div>
-                <div style={{ fontSize: '28px', fontWeight: '900' }}>Rs. {parseFloat(bill.final_amount).toFixed(2)}</div>
-            </div>
-
-            {bill.cashReceived > 0 && (
-                <div style={{ marginTop: '10px', fontSize: '11px', borderTop: '2px dashed #000', paddingTop: '10px', textAlign: 'center' }}>
-                    <div style={{ margin: '5px 0', fontWeight: '800' }}>
-                        <div>Cash Received: {parseFloat(bill.cashReceived).toFixed(2)}</div>
-                    </div>
-                    <div style={{ margin: '5px 0', fontWeight: '900', fontSize: '12px' }}>
-                        <div>Balance: {Math.max(0, bill.cashReceived - bill.final_amount).toFixed(2)}</div>
+            {/* Client Info Section */}
+            {bill.client_name && (
+                <div style={{ margin: '10px 0', padding: '8px 0', borderTop: '1px dashed #000', borderBottom: '1px dashed #000' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '4px 0', fontSize: '11px' }}>
+                        <span style={{ fontWeight: '900' }}>Client:</span>
+                        <span style={{ fontWeight: '700' }}>{bill.client_name}</span>
                     </div>
                 </div>
             )}
 
-            <div style={thermalStyles.footer}>
-                <div>THANK YOU</div>
+            {/* Items Table */}
+            <div style={{ margin: '12px 0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', margin: '8px 0' }}>
+                    <thead>
+                        <tr style={{ borderBottom: '2px solid #000' }}>
+                            <th style={{ textAlign: 'left', fontWeight: '900', padding: '6px 4px', fontSize: '13px' }}>Item</th>
+                            <th style={{ textAlign: 'center', fontWeight: '900', padding: '6px 4px', fontSize: '13px', width: '30px' }}>Qty</th>
+                            <th style={{ textAlign: 'right', fontWeight: '900', padding: '6px 4px', fontSize: '13px', minWidth: '60px' }}>Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {bill.details?.map((item, i) => (
+                            <tr key={i} style={{ borderBottom: '1px dotted #999' }}>
+                                <td style={{ textAlign: 'left', padding: '6px 4px', fontSize: '12px', fontWeight: '700' }}>
+                                    {i + 1}.{item.item_name}
+                                </td>
+                                <td style={{ textAlign: 'center', padding: '6px 4px', fontSize: '12px', fontWeight: '700' }}>
+                                    {item.quantity}
+                                </td>
+                                <td style={{ textAlign: 'right', padding: '6px 4px', fontSize: '12px', fontWeight: '700' }}>
+                                    Rs.{parseFloat(item.total_price).toFixed(2)}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Totals Section */}
+            <div style={{ margin: '12px 0', paddingTop: '8px', borderTop: '2px solid #000' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', margin: '6px 0', fontSize: '13px', fontWeight: '800' }}>
+                    <span>Subtotal:</span>
+                    <span>Rs.{parseFloat(bill.total_amount).toFixed(2)}</span>
+                </div>
+                {bill.discount > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '6px 0', fontSize: '13px', fontWeight: '700', color: '#666' }}>
+                        <span>Discount:</span>
+                        <span>-Rs.{parseFloat(bill.discount).toFixed(2)}</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Grand Total */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '900', fontSize: '18px', marginTop: '10px', paddingTop: '10px', borderTop: '3px double #000' }}>
+                <span>TOTAL:</span>
+                <span>Rs. {parseFloat(bill.final_amount).toFixed(2)}</span>
+            </div>
+
+            {/* Payment Info */}
+            {bill.cashReceived > 0 && (
+                <div style={{ margin: '12px 0', padding: '8px', background: '#f9f9f9', border: '1px solid #ddd', fontSize: '12px', fontWeight: '700' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '4px 0' }}>
+                        <span>Cash Received:</span>
+                        <span>Rs.{parseFloat(bill.cashReceived).toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '4px 0', fontWeight: '900' }}>
+                        <span>Balance:</span>
+                        <span>Rs.{Math.max(0, bill.cashReceived - bill.final_amount).toFixed(2)}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Thank You Message */}
+            <div style={{ textAlign: 'center', margin: '15px 0 10px', fontSize: '15px', fontWeight: '900', letterSpacing: '3px' }}>
+                THANK YOU!
+            </div>
+
+            {/* Footer Info */}
+            <div style={{ textAlign: 'center', fontSize: '11px', color: '#000', marginTop: '12px', lineHeight: '1.6', fontWeight: '700' }}>
+                <div>2nd No. 10, Shady Grove Ave, Borella</div>
+                <div style={{ marginTop: '4px', fontWeight: '800' }}>0112688449 | 0772008802</div>
             </div>
         </div>
     );

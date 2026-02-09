@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Receipt - HAIRSKIIN</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .demo-container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            max-width: 600px;
+        }
+
+        .demo-title {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .demo-subtitle {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .demo-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-print {
+            background: #4CAF50;
+            color: white;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-print:hover {
+            background: #45a049;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+        }
+
+        /* PROFESSIONAL RECEIPT DESIGN */
+        .thermal-receipt {
+            background: #ffffff;
+            width: 80mm;
+            max-width: 80mm;
+            padding: 10mm 6mm;
+            margin: 0 auto;
+            font-family: "Courier New", Courier, monospace;
+            color: #000000;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.5;
+            border: 1px solid #e5e5e5;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #000;
+        }
+
+        .shop-logo {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 8px;
+            display: block;
+        }
+
+        .shop-name {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .shop-tagline {
+            font-size: 10px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .receipt-info {
+            font-size: 11px;
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+
+        .receipt-number {
+            font-size: 13px;
+            font-weight: 900;
+            text-align: center;
+            margin: 10px 0;
+            padding: 6px 0;
+            background: #f5f5f5;
+            border: 1px solid #000;
+        }
+
+        .info-section {
+            margin: 10px 0;
+            padding: 8px 0;
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            font-size: 11px;
+        }
+
+        .info-label {
+            font-weight: 900;
+        }
+
+        .items-section {
+            margin: 12px 0;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+        }
+
+        .items-table th {
+            text-align: left;
+            font-weight: 900;
+            padding: 6px 4px;
+            border-bottom: 2px solid #000;
+            font-size: 12px;
+        }
+
+        .items-table td {
+            padding: 6px 4px;
+            font-size: 11px;
+            font-weight: 700;
+            border-bottom: 1px dotted #999;
+        }
+
+        .item-name {
+            max-width: 150px;
+        }
+
+        .item-qty {
+            text-align: center;
+            width: 30px;
+        }
+
+        .item-price {
+            text-align: right;
+            min-width: 60px;
+        }
+
+        .totals-section {
+            margin: 12px 0;
+            padding-top: 8px;
+            border-top: 2px solid #000;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+            font-size: 12px;
+        }
+
+        .total-row.subtotal {
+            font-weight: 700;
+        }
+
+        .total-row.discount {
+            font-weight: 700;
+            color: #666;
+        }
+
+        .grand-total {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 900;
+            font-size: 16px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 3px double #000;
+        }
+
+        .payment-info {
+            margin: 12px 0;
+            padding: 8px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            font-size: 11px;
+        }
+
+        .thank-you {
+            text-align: center;
+            margin: 15px 0 10px;
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 3px;
+        }
+
+        .barcode-section {
+            text-align: center;
+            margin: 12px 0;
+            padding: 10px 0;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .barcode {
+            width: 180px;
+            height: 50px;
+            margin: 8px auto;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    #000 0px,
+                    #000 2px,
+                    #fff 2px,
+                    #fff 4px
+                );
+        }
+
+        .barcode-number {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-top: 4px;
+        }
+
+        .footer-info {
+            text-align: center;
+            font-size: 9px;
+            color: #666;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .demo-container {
+                box-shadow: none;
+                padding: 0;
+                border-radius: 0;
+            }
+
+            .demo-title,
+            .demo-subtitle,
+            .demo-buttons {
+                display: none;
+            }
+
+            .thermal-receipt {
+                border: none;
+                box-shadow: none;
+                margin: 0;
+            }
+
+            @page {
+                size: 80mm auto;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 class="demo-title">🧾 Professional Receipt</h1>
+        <p class="demo-subtitle">Similar to your example | 80mm Width</p>
+        
+        <div class="demo-buttons">
+            <button class="btn btn-print" onclick="window.print()">🖨️ PRINT RECEIPT</button>
+        </div>
+
+        <div class="thermal-receipt">
+            <!-- Header with Logo -->
+            <div class="receipt-header">
+                <svg class="shop-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="48" fill="#000" stroke="#000" stroke-width="2"/>
+                    <text x="50" y="62" font-size="42" font-weight="bold" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">HS</text>
+                </svg>
+                <div class="shop-name">HAIRSKIIN</div>
+                <div class="shop-tagline">Quality Hair & Skin Care</div>
+            </div>
+
+            <!-- Receipt Info -->
+            <div class="receipt-info">
+                <div style="text-align: center; font-weight: 900;">Receipt #1234567</div>
+                <div style="text-align: center; margin-top: 4px;">Manager: Lorem I.</div>
+                <div style="text-align: center; margin-top: 8px; font-size: 10px;">
+                    <div>09/02/2026 08:00:00</div>
+                    <div>2nd No. 10, Shady Grove Ave, Borella</div>
+                </div>
+            </div>
+
+            <!-- Customer Info -->
+            <div class="info-section">
+                <div class="info-row">
+                    <span class="info-label">Client:</span>
+                    <span>Ipsum Lorem</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date of Birth:</span>
+                    <span>09/MM/YYYY</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Location:</span>
+                    <span>Lorem Ip 123 567</span>
+                </div>
+            </div>
+
+            <!-- Items Table -->
+            <div class="items-section">
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th class="item-name">Item</th>
+                            <th class="item-qty">Qty</th>
+                            <th class="item-price">Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="item-name">1.Lorem ipsum dolor 33-123</td>
+                            <td class="item-qty">1</td>
+                            <td class="item-price">$34.50</td>
+                        </tr>
+                        <tr>
+                            <td class="item-name">2.Ut enim adipiscidunt 56-908</td>
+                            <td class="item-qty">2</td>
+                            <td class="item-price">$21.45</td>
+                        </tr>
+                        <tr>
+                            <td class="item-name">3.Duis aute irure 45-234</td>
+                            <td class="item-qty">1</td>
+                            <td class="item-price">$56.70</td>
+                        </tr>
+                        <tr>
+                            <td class="item-name">4.Laboris nismat 56-768</td>
+                            <td class="item-qty">3</td>
+                            <td class="item-price">$14.25</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totals -->
+            <div class="totals-section">
+                <div class="total-row subtotal">
+                    <span>Subtotal:</span>
+                    <span>$126.90</span>
+                </div>
+            </div>
+
+            <!-- Grand Total -->
+            <div class="grand-total">
+                <span>TOTAL:</span>
+                <span>Rs. 126.90</span>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="payment-info">
+                <div class="info-row">
+                    <span>Payment:</span>
+                    <span>XXXX XXXX XXXX 1234</span>
+                </div>
+                <div class="info-row">
+                    <span>Date:</span>
+                    <span>Visa/0123456</span>
+                </div>
+            </div>
+
+            <!-- Thank You -->
+            <div class="thank-you">
+                THANK YOU FOR SHOPPING!
+            </div>
+
+            <!-- Barcode -->
+            <div class="barcode-section">
+                <div class="barcode"></div>
+                <div class="barcode-number">1234567653AB10213</div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer-info">
+                <div>Get free product safety&recall info</div>
+                <div>www.loreipsum.dol</div>
+                <div style="margin-top: 8px;">0112688449 | 0772008802</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
