@@ -997,32 +997,56 @@ textarea.input {
     margin: 0;
   }
 
-  /* Thermal specific override */
+  /* Thermal specific override - XP-58C Printer Optimized */
   .print-active .thermal-receipt {
     page: thermal;
-    width: 48mm;
-    /* Safe printable area for 58mm printer (leaving ~5mm margins) */
-    max-width: 48mm;
+    width: 58mm;
+    max-width: 58mm;
     min-height: auto;
-    padding: 0;
-    font-size: 12px;
-    /* Standard legible size for 58mm */
-    font-weight: 600;
-    color: #000 !important;
+    padding: 8mm 5mm;
     margin: 0 auto;
-    /* Center on the paper strip */
-    line-height: 1.2;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 13px;
+    font-weight: 800;
+    color: #000 !important;
+    background: #fff !important;
+    line-height: 1.6;
     overflow: visible;
-    /* Allow long receipts to print fully */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    display: block;
     text-align: center;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-active .thermal-receipt * {
+    font-family: "Courier New", Courier, monospace !important;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .print-active .thermal-receipt img {
+    max-width: 70px;
+    max-height: 70px;
+    display: inline-block;
+    margin: 0 auto 10px auto;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
   }
 
   .print-active .thermal-receipt table {
     width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-weight: 900;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .print-active .thermal-receipt table th,
+  .print-active .thermal-receipt table td {
+    padding: 6px 0;
+    text-align: center;
+    font-weight: 900;
   }
 
   .print-active .thermal-receipt .payment-qr {
@@ -1061,6 +1085,50 @@ textarea.input {
     size: auto;
     margin: 0;
   }
+}
+
+/* Thermal Receipt Screen Styles - XP-58C Preview */
+.thermal-receipt {
+  background: #ffffff;
+  width: 58mm;
+  max-width: 58mm;
+  padding: 8mm 5mm;
+  margin: 20px auto;
+  font-family: "Courier New", Courier, monospace;
+  color: #000000;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.6;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.thermal-receipt * {
+  font-family: "Courier New", Courier, monospace;
+  text-align: center;
+}
+
+.thermal-receipt img {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 auto;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+.thermal-receipt table {
+  margin: 0 auto;
+  text-align: center;
+  font-weight: 900;
+}
+
+.thermal-receipt table th,
+.thermal-receipt table td {
+  text-align: center;
+  font-weight: 900;
 }
 
 /* Professional Bill Screen Styles */

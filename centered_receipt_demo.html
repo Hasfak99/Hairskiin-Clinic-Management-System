@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CENTERED Thermal Receipt - HAIRSKIIN</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .demo-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+        }
+
+        .demo-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .demo-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-print {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-print:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .thermal-receipt {
+            background: #ffffff;
+            width: 58mm;
+            max-width: 58mm;
+            padding: 6mm 4mm;
+            margin: 0 auto;
+            font-family: "Courier New", Courier, monospace;
+            color: #000000;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.5;
+            border: 1px solid #e5e5e5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin: 6px 0 10px 0;
+        }
+
+        .receipt-logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 8px;
+        }
+
+        .shop-name {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        .contact-info {
+            font-size: 10px;
+            margin: 5px 0;
+            line-height: 1.6;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .divider {
+            border-top: 2px solid #000;
+            margin: 10px 0;
+        }
+
+        .dashed-divider {
+            border-top: 2px dashed #000;
+            margin: 10px 0;
+        }
+
+        .bill-info {
+            text-align: center;
+            font-size: 11px;
+            margin: 8px 0;
+            font-weight: 800;
+        }
+
+        .bill-number {
+            font-weight: 900;
+            margin: 4px 0;
+            font-size: 12px;
+        }
+
+        .receptionist {
+            font-size: 10px;
+            margin: 4px 0;
+            font-weight: 700;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 11px;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .items-table th {
+            text-align: center;
+            font-weight: 900;
+            padding: 5px 0;
+            border-bottom: 2px solid #000;
+            font-size: 12px;
+        }
+
+        .items-table td {
+            padding: 5px 0;
+            font-size: 11px;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .totals-section {
+            border-top: 2px solid #000;
+            padding-top: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .total-line {
+            margin: 5px 0;
+        }
+
+        .grand-total {
+            text-align: center;
+            font-weight: 900;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 3px double #000;
+        }
+
+        .grand-total .label {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .grand-total .amount {
+            font-size: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 5px;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .demo-container {
+                box-shadow: none;
+                padding: 0;
+                border-radius: 0;
+            }
+
+            .demo-title,
+            .demo-buttons {
+                display: none;
+            }
+
+            .thermal-receipt {
+                border: none;
+                box-shadow: none;
+                margin: 0;
+            }
+
+            @page {
+                size: 58mm auto;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h2 class="demo-title">✨ CENTERED Thermal Receipt</h2>
+        <div class="demo-buttons">
+            <button class="btn btn-print" onclick="window.print()">🖨️ Print Receipt</button>
+        </div>
+
+        <div class="thermal-receipt">
+            <!-- Logo -->
+            <div class="logo-container">
+                <svg class="receipt-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="45" fill="#000" stroke="#000" stroke-width="2"/>
+                    <text x="50" y="60" font-size="40" font-weight="bold" fill="#fff" text-anchor="middle" font-family="Arial, sans-serif">HS</text>
+                </svg>
+            </div>
+
+            <!-- Shop Name -->
+            <div class="shop-name">HAIRSKIIN</div>
+
+            <!-- Contact Info -->
+            <div class="contact-info">
+                <div>2nd No. 10, Shady Grove Ave</div>
+                <div>Borella</div>
+                <div>0112688449 | 0772008802</div>
+            </div>
+
+            <!-- Divider -->
+            <div class="divider"></div>
+
+            <!-- Bill Info -->
+            <div class="bill-info">
+                <div class="bill-number">Bill No: #000006602/09/26</div>
+                <div class="receptionist">Receptionist: N/A</div>
+            </div>
+
+            <!-- Dashed Divider -->
+            <div class="dashed-divider"></div>
+
+            <!-- Items Table -->
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>fgg</td>
+                        <td>1</td>
+                        <td>3434.00</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Totals Section -->
+            <div class="totals-section">
+                <div class="total-line">Subtotal: 3434.00</div>
+                <div class="total-line">Discount: -34.00</div>
+            </div>
+
+            <!-- Grand Total -->
+            <div class="grand-total">
+                <div class="label">TOTAL</div>
+                <div class="amount">Rs. 3400.00</div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <div>THANK YOU</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
