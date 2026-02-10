@@ -1099,8 +1099,6 @@ textarea.input {
   font-size: 14px;
   font-weight: 800;
   line-height: 1.6;
-  border: 1px solid #e5e5e5;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   text-align: center;
   overflow-wrap: break-word;
   word-wrap: break-word;
