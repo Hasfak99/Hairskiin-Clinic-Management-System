@@ -148,8 +148,8 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
         <div className="thermal-receipt" style={thermalStyles.container}>
             {/* Header Section */}
             <div style={{ textAlign: 'center', marginBottom: '10px', paddingBottom: '8px' }}>
-                <img 
-                    src="/HS_1.png" 
+                <img
+                    src="/HS_1.png"
                     alt="Logo"
                     style={thermalStyles.logo}
                 />
@@ -160,7 +160,7 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
                 <div>{formatBillNumber()}</div>
                 <div style={{ marginTop: '6px', fontSize: '13px', fontWeight: '700' }}>
                     <div>{formatDateTime()}</div>
-                    <div style={{ marginTop: '2px' }}>2nd No. 10, Shady Grove Ave, Borella</div>
+                    <div style={{ marginTop: '2px' }}>10 Shady Grove Ave, Colombo Borella</div>
                 </div>
             </div>
 
