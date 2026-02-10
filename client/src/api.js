@@ -26,17 +26,25 @@ api.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
-        // Add branch_id to query params if available
-        const branchId = localStorage.getItem('selectedBranchId');
-        if (branchId) {
-            if (!config.params) {
-                config.params = {};
-            }
-            // Only inject branch_id if not already specified (allow overriding with null/value)
-            if (config.params.branch_id === undefined) {
+
+        // Handle Branch Filtering Logic
+        if (!config.params) {
+            config.params = {};
+        }
+
+        // If branch_id is explicitly set to null (or a specific "All" marker), 
+        // it means we want to BYPASS the default branch injection.
+        // We should then REMOVE it so it isn't sent as "null" string to the backend.
+        if (config.params.branch_id === null) {
+            delete config.params.branch_id;
+        } else if (config.params.branch_id === undefined) {
+            // Only inject request-scoped branch_id if it wasn't specified (and wasn't null)
+            const branchId = localStorage.getItem('selectedBranchId');
+            if (branchId) {
                 config.params.branch_id = branchId;
             }
         }
+
         return config;
     },
     (error) => Promise.reject(error)

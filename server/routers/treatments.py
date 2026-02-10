@@ -28,33 +28,44 @@ async def get_treatments(
     """Get all treatments with optional filters and pagination"""
     query = db.query(models.Treatment)
     
-    # Filter by branch_id - only if provided or user has a branch
-    # If user is admin/manager without branch_id, show all treatments
-    # If user has branch_id or branch_id is provided, filter by it
-    filter_branch_id = branch_id if branch_id else current_branch_id
-    if filter_branch_id is not None:
-        # Filter by specific branch_id OR treatments with no branch_id (global treatments)
+    # Filter by Branch Logic
+    # 1. If explicit branch_id query param is provided, use it.
+    # 2. If not, use current_user.branch_id, UNLESS user is allowed to see all branches.
+    
+    can_see_all_branches = False
+    
+    # 1. Super Admin and Director can always see all branches
+    if current_user.role in [models.UserRole.super_admin, models.UserRole.director]:
+        can_see_all_branches = True
+        
+    # 2. Main Branch Admin can see all branches (BUT NOT Managers)
+    elif current_user.role == models.UserRole.admin and current_user.branch_id:
+        # Explicit query to check branch name safely
+        try:
+            branch = db.query(models.Branch).filter(models.Branch.branch_id == current_user.branch_id).first()
+            if branch and branch.branch_name == 'Main Branch':
+                can_see_all_branches = True
+        except Exception:
+            # Fallback if query fails
+            pass
+    
+    target_branch_id = branch_id
+    
+    if target_branch_id is None:
+        # No explicit filter. Enforce user's branch unless they can see all.
+        if current_user.branch_id and not can_see_all_branches:
+            target_branch_id = current_user.branch_id
+
+    # Apply Branch Filter
+    if target_branch_id is not None:
         query = query.filter(
-            (models.Treatment.branch_id == filter_branch_id) | 
+            (models.Treatment.branch_id == target_branch_id) | 
             (models.Treatment.branch_id.is_(None))
         )
-    # If filter_branch_id is None, show all treatments (admin/manager without branch)
-
-    # STRICT ISOLATION for non-super-admins (e.g. sgs who is Admin but specific to a branch)
-    if current_user.role != models.UserRole.super_admin:
-        # Filter by Department
-        if current_user.department_id:
-            query = query.filter(models.Treatment.department_id == current_user.department_id)
         
-        # Filter by Branch (Override logic above if needed, or strictly enforce)
-        # The logic above handled filter_branch_id, but we must enforce current_user.branch_id if set
-        # UNLESS IS DIRECTOR OR Main Branch Admin
-        is_main_branch = current_user.branch and current_user.branch.branch_name == 'Main Branch'
-        if current_user.branch_id and current_user.role != models.UserRole.director and not is_main_branch:
-            query = query.filter(
-                (models.Treatment.branch_id == current_user.branch_id) | 
-                (models.Treatment.branch_id.is_(None)) 
-            )
+    # Filter by Department (for non-super-admins)
+    if current_user.role != models.UserRole.super_admin and current_user.department_id:
+        query = query.filter(models.Treatment.department_id == current_user.department_id)
     
     if active_only:
         query = query.filter(models.Treatment.is_active == True)

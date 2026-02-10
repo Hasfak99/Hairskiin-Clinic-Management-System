@@ -1,0 +1,52 @@
+
+--- BRANCHES ---
+ID: 1, Name: Main Branch
+ID: 2, Name: Borella
+ID: 5, Name: Colombo
+ID: 6, Name: Kandy
+ID: 8, Name: colombo
+ID: 9, Name: kandy
+ID: 10, Name: Main Branch
+ID: 11, Name: ampara
+ID: 12, Name: Ampara
+ID: 13, Name: Test Branch 1
+ID: 14, Name: Test Branch 2
+
+--- DEPARTMENTS ---
+ID: 1, Name: Hair Skin Clinic
+ID: 4, Name: Harskin
+ID: 5, Name: HairSkin
+
+--- USERS (Directors/Admins) ---
+User: admin, Role: admin, Branch: Main Branch (1), Dept: Hair Skin Clinic (1)
+User: manager, Role: manager, Branch: Main Branch (1), Dept: Hair Skin Clinic (1)
+User: mnb, Role: manager, Branch: Borella (2), Dept: Hair Skin Clinic (1)
+User: admin2, Role: admin, Branch: Borella (2), Dept: Hair Skin Clinic (1)
+User: admin3, Role: admin, Branch: Colombo (5), Dept: Hair Skin Clinic (1)
+User: abc, Role: director, Branch: Main Branch (1), Dept: Hair Skin Clinic (1)
+User: admin5, Role: admin, Branch: Kandy (6), Dept: Hair Skin Clinic (1)
+User: abc2, Role: director, Branch: Main Branch (1), Dept: Hair Skin Clinic (1)
+User: hsuser, Role: admin, Branch: Borella (2), Dept: Harskin (4)
+User: admin_hsc, Role: admin, Branch: Borella (2), Dept: Hair Skin Clinic (1)
+User: hsdir, Role: director, Branch: Main Branch (1), Dept: Harskin (4)
+User: hsmad, Role: admin, Branch: Borella (2), Dept: Harskin (4)
+User: asd, Role: admin, Branch: colombo (8), Dept: Harskin (4)
+User: admin_harskin, Role: admin, Branch: Borella (2), Dept: Harskin (4)
+User: hsmanage, Role: manager, Branch: colombo (8), Dept: Harskin (4)
+User: bad, Role: admin, Branch: kandy (9), Dept: Harskin (4)
+User: kma, Role: manager, Branch: kandy (9), Dept: Harskin (4)
+User: director_test, Role: director, Branch: Test Branch 1 (13), Dept: HairSkin (5)
+User: admin_test, Role: admin, Branch: Test Branch 1 (13), Dept: HairSkin (5)
+
+--- TREATMENTS (Hair Skin Clinic) ---
+Found Dept: Hair Skin Clinic (ID: 1)
+T: fgg, Branch: Borella (2), Active: True
+T: bhhgj, Branch: Kandy (6), Active: True
+T: dvs, Branch: Main Branch (1), Active: True
+T: vse, Branch: Colombo (5), Active: True
+T: fdhdf, Branch: ampara (11), Active: True
+T: dvgd, Branch: Colombo (5), Active: True
+T: jt, Branch: Main Branch (1), Active: True
+
+--- TREATMENTS (HairSkin - if different) ---
+Found Dept: HairSkin (ID: 5)

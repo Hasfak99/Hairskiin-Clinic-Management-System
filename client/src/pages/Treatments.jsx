@@ -31,21 +31,41 @@ export default function Treatments() {
         pages: 1
     });
 
+    const [filterBranchId, setFilterBranchId] = useState(''); // '' means All Branches (or default interceptor behavior if undefined, but we want explicit)
+
     useEffect(() => {
         fetchTreatments();
         fetchCategories();
         fetchBranches();
         fetchDepartments();
-    }, [pagination.page]);
+    }, [pagination.page, filterBranchId]); // Add filterBranchId dependency
 
     const fetchTreatments = async () => {
         try {
             setLoading(true);
-            const response = await treatmentsAPI.getAll({
+            const params = {
                 active_only: false,
                 page: pagination.page,
                 size: pagination.size
-            });
+            };
+
+            // Explicitly handle branch_id to bypass interceptor or filter
+            if (filterBranchId) {
+                params.branch_id = filterBranchId;
+            } else {
+                // Determine if user is Director/Admin/SuperAdmin who should see ALL
+                // If so, pass explicit null (or empty string if API handles it) to bypass interceptor
+                const role = user?.role?.toLowerCase();
+                if (['director', 'super_admin', 'admin'].includes(role)) {
+                    // We probably want to send something that tells the API "No Filter" 
+                    // OR tells the Interceptor "Don't touch this".
+                    // Looking at api.js: if (config.params.branch_id === undefined) it injects.
+                    // So we must define it.
+                    params.branch_id = null;
+                }
+            }
+
+            const response = await treatmentsAPI.getAll(params);
             setTreatments(response.data.items);
             setPagination(prev => ({
                 ...prev,
@@ -244,13 +264,34 @@ export default function Treatments() {
                     <h1 className="page-title">Treatments</h1>
                     <p className="page-subtitle">Manage services offered</p>
                 </div>
-                <button
-                    className="btn btn-primary"
-                    onClick={() => { resetForm(); setShowModal(true); }}
-                >
-                    <Plus size={18} />
-                    Add Treatment
-                </button>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {/* Branch Filter for Directors/Admins */}
+                    {['director', 'super_admin', 'admin'].includes(user?.role?.toLowerCase()) && (
+                        <select
+                            className="input"
+                            style={{ width: '200px' }}
+                            value={filterBranchId}
+                            onChange={(e) => {
+                                setFilterBranchId(e.target.value);
+                                setPagination(prev => ({ ...prev, page: 1 })); // Reset to page 1
+                            }}
+                        >
+                            <option value="">All Branches</option>
+                            {branches.map(b => (
+                                <option key={b.branch_id} value={b.branch_id}>{b.branch_name}</option>
+                            ))}
+                        </select>
+                    )}
+
+                    <button
+                        className="btn btn-primary"
+                        onClick={() => { resetForm(); setShowModal(true); }}
+                    >
+                        <Plus size={18} />
+                        Add Treatment
+                    </button>
+                </div>
             </div>
 
             <DataTable
