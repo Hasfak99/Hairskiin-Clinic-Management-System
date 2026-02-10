@@ -243,7 +243,7 @@ export default function ThermalReceipt({ bill, clinicName = "HAIRSKIIN" }) {
 
             {/* Footer Info */}
             <div style={{ textAlign: 'center', fontSize: '13px', color: '#000', marginTop: '12px', lineHeight: '1.6', fontWeight: '700' }}>
-                <div>2nd No. 10, Shady Grove Ave, Borella</div>
+                <div>10 Shady Grove Ave, Colombo Borella</div>
                 <div style={{ marginTop: '4px', fontWeight: '800' }}>0112688449 | 0772008802</div>
             </div>
         </div>
