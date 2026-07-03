@@ -1,4 +1,4 @@
-# Hairskiin CRM
+# Hairskiin 
 
 **Complete Client, Appointment & Billing Management System for Hair & Skin Clinics**
 
